@@ -35,7 +35,9 @@ def _system(cmd):
 
 
 @click.command()
-def scripts_build():
+@click.option("--tag/--no-tag", default=True)
+def scripts_build(tag):
+    assert not tag
     config = toml.load("pyproject.toml")
     version = config["tool"]["poetry"]["version"]
     package_name = config["tool"]["poetry"]["name"]
@@ -44,6 +46,8 @@ def scripts_build():
         "poetry build",
         f"tar xzf dist/{package_name}-{version}.tar.gz -C dist/",
         f"cp dist/{package_name}-{version}/setup.py .",
+        "git commit -a -m \"release {version}\"",
+        "git push",
     ]))
 
 
