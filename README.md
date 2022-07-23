@@ -3,5 +3,6 @@ Alex Leontiev's misc Python toolbox
 
 ## todo
 
-- [ ] basic package
-- [ ] 
+## install
+
+`git+https://github.com/nailbiter/alex_leontiev_toolbox_python@main-poetry`
