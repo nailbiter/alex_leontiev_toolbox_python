@@ -76,4 +76,3 @@ def test_to_table():
             if table_name is not None:
                 bq_client.delete_table(table_name, not_found_ok=True)
             bq_client.delete_dataset(dataset_name, not_found_ok=True)
-            pass
