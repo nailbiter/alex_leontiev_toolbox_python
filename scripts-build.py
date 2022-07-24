@@ -52,13 +52,13 @@ def scripts_build(tag, generate_setup):
 
     if generate_setup:
         pass
-#        _system(" && ".join([
-#            "rm -rf dist",
-#            "poetry build",
-#            f"tar xzf dist/{package_name}-{version}.tar.gz -C dist/",
-#            f"cp dist/{package_name}-{version}/setup.py .",
-#            "git add setup.py",
-#        ])
+        _system(" && ".join([
+            "rm -rf dist",
+            "poetry build",
+            f"tar xzf dist/{package_name}-{version}.tar.gz -C dist/",
+            f"cp dist/{package_name}-{version}/setup.py .",
+            "git add setup.py",
+        ]))
     _system(" && ".join([
         "git commit -a -m \"release {version}\"",
         "git push",
