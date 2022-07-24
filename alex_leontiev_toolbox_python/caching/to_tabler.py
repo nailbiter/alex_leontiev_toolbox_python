@@ -23,6 +23,11 @@ FIXME:
 
 from google.cloud import bigquery
 import hashlib
+import alex_leontiev_toolbox_python.utils
+
+
+def _sql_to_hash(sql):
+    return alex_leontiev_toolbox_python.utils.string_to_hash(sql, algo="md5")
 
 
 class ToTabler:
@@ -35,9 +40,17 @@ class ToTabler:
         self._prefix = prefix
         self._client = bq_client
 
+        _dataset = ".".join(prefix.split(".")[:2])
+        assert alex_leontiev_toolbox_python.utils.table_exists(
+            _dataset, bq_client=bq_client, entity="dataset"), f"ds \"{_dataset}\" does not exist"
+        self._quota_used_bytes = 0
+
     @property
     def client(self):
         return self._client
+    @property
+    def quota_used_bytes(self):
+        return self._quota_used_bytes
 
-    def __call__(self, sql, preamble=None):
+    def __call__(self, sql, preamble=None, dry_run):
         pass

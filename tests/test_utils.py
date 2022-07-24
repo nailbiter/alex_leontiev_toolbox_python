@@ -1,6 +1,6 @@
 """===============================================================================
 
-        FILE: alex_leontiev_toolbox_python/utils.py
+        FILE: /Users/nailbiter/Documents/forgithub/alex_leontiev_toolbox_python/tests/test_utils.py
 
        USAGE: (not intended to be directly executed)
 
@@ -13,19 +13,7 @@ REQUIREMENTS: ---
       AUTHOR: Alex Leontiev (alozz1991@gmail.com)
 ORGANIZATION: 
      VERSION: ---
-     CREATED: 2022-07-24T14:21:29.570494
+     CREATED: 2022-07-24T14:54:55.304815
     REVISION: ---
 
 ==============================================================================="""
-import hashlib
-
-
-def string_to_hash(s, algo="md5"):
-    assert algo in ["md5", "sha256"]
-    return getattr(hashlib, algo)(s.encode()).hexdigest()
-
-def format_bytes(b,unit="gib"):
-    _UNITS = {
-        **{f"{w}ib":2**(i+1) for i,w in enumerate(list("kmgtp"))}        
-    }
-    assert unit in _UNITS
