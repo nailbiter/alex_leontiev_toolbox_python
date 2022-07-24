@@ -50,7 +50,8 @@ def scripts_build(tag, generate_setup):
     version = config["tool"]["poetry"]["version"]
     package_name = config["tool"]["poetry"]["name"]
 
-#    if generate_setup:
+    if generate_setup:
+        pass
 #        _system(" && ".join([
 #            "rm -rf dist",
 #            "poetry build",
