@@ -44,12 +44,12 @@ def _system(cmd):
 @click.option("--tag/--no-tag", default=True)
 @click.option("--generate-setup/--no-generate-setup", default=False)
 def scripts_build(tag, generate_setup):
-#    assert not tag
-#
-#    config = toml.load("pyproject.toml")
-#    version = config["tool"]["poetry"]["version"]
-#    package_name = config["tool"]["poetry"]["name"]
-#
+    assert not tag
+
+    config = toml.load("pyproject.toml")
+    version = config["tool"]["poetry"]["version"]
+    package_name = config["tool"]["poetry"]["name"]
+
 #    if generate_setup:
 #        _system(" && ".join([
 #            "rm -rf dist",
@@ -58,7 +58,6 @@ def scripts_build(tag, generate_setup):
 #            f"cp dist/{package_name}-{version}/setup.py .",
 #            "git add setup.py",
 #        ])
-#
     _system(" && ".join([
         "git commit -a -m \"release {version}\"",
         "git push",
