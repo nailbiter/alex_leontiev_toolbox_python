@@ -35,4 +35,25 @@ def table_exists(table_name, bq_client=None, entity="table"):
 def query_bytes(sql, bq_client=None):
     if bq_client is None:
         bq_client = bigquery.Client()
-    return bq_client.query(sql, job_cofig=bigquery.QueryJobConfig(dry_run=True, use_query_cache=False)).total_bytes_processed
+    return bq_client.query(sql, job_config=bigquery.QueryJobConfig(dry_run=True, use_query_cache=False)).total_bytes_processed
+
+
+def create_dataset(dataset_name, bq_client=None, exist_ok=False, location=None):
+    """
+    based on https://cloud.google.com/bigquery/docs/datasets#create-dataset
+    """
+    if bq_client is None:
+        bq_client = bigquery.Client()
+
+    if table_exists(dataset_name, bq_client=bq_client, entity="dataset"):
+        assert exist_ok, f"dataset \"{dataset_name}\" exists"
+        dataset = bq_client.get_dataset(dataset_name)
+        if location is not None:
+            assert dataset.location == location, (dataset.location, location)
+    else:
+        dataset = bigquery.Dataset(dataset_name)
+        if location is not None:
+            dataset.location = location
+        dataset = bq_client.create_dataset(dataset, timeout=30)
+
+    return dataset

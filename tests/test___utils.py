@@ -17,3 +17,16 @@ ORGANIZATION:
     REVISION: ---
 
 ==============================================================================="""
+import alex_leontiev_toolbox_python.utils
+
+
+def test_format_bytes():
+    assert alex_leontiev_toolbox_python.utils.format_bytes(
+        1000, unit="kib") == "0.98kib"
+
+
+def test_number_lines():
+    assert alex_leontiev_toolbox_python.utils.number_lines(
+        "a\nb\nc") == "0: a\n1: b\n2: c"
+    assert alex_leontiev_toolbox_python.utils.number_lines(
+        "a\nb\nc", start_count=1, sep=":") == "1:a\n2:b\n3:c"
