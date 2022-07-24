@@ -1,6 +1,6 @@
 """===============================================================================
 
-        FILE: alex_leontiev_toolbox_python/__init__.py
+        FILE: /Users/nailbiter/Documents/forgithub/alex_leontiev_toolbox_python/alex_leontiev_toolbox_python/caching/fetcher.py
 
        USAGE: (not intended to be directly executed)
 
@@ -13,7 +13,10 @@ REQUIREMENTS: ---
       AUTHOR: Alex Leontiev (alozz1991@gmail.com)
 ORGANIZATION: 
      VERSION: ---
-     CREATED: 2022-07-23T15:24:42.032671
+     CREATED: 2022-07-24T13:57:38.736812
     REVISION: ---
 
 ==============================================================================="""
+
+class Fetcher:
+    pass
