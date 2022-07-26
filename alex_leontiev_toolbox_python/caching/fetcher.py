@@ -57,6 +57,7 @@ class Fetcher:
             d["is_executed"] = False
             with self._sqlalchemy_engine.connect() as conn:
                 df = pd.read_sql(text(f"SELECT * FROM {db_table};"), conn)
+            self._logger.warning(f"fetching \"{table_name}\" from cache")
         else:
             d["is_executed"] = True
             num_bytes = self._bq_client.get_table(table_name).num_bytes
@@ -64,7 +65,7 @@ class Fetcher:
             df = self._bq_client.query(
                 f"select * from `{table_name}`").to_dataframe(**self._to_dataframe_kwargs)
             with self._sqlalchemy_engine.begin() as conn:
-                df.to_sql(db_table, conn, if_exists="replace")
+                df.to_sql(db_table, conn, if_exists="replace", index=False)
             self._quota_used_bytes += num_bytes
         return (df, d) if is_return_debug_info else df
 
