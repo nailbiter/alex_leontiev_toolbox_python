@@ -133,3 +133,4 @@ dmypy.json
 *.swp
 poetry.lock
 .envrc
+.fetcher.db

@@ -63,15 +63,17 @@ def test_to_table():
 
             logging.warning(to_table.quota_used_bytes)
 
-            fetch = alex_leontiev_toolbox_python.caching.fetcher.Fetcher(
-                bq_client=bq_client
-            )
-            df, debug = fetch(table_name, is_return_debug_info=True)
-            assert len(df) == 10
-            assert debug["is_executed"]
-            df, debug = fetch(table_name, is_return_debug_info=True)
-            assert not debug["is_executed"]
-            logging.warning(fetch.quota_used_bytes)
+            for kwargs in [{}, dict(sqlalchemy_db="sqlite+pysqlite:///.fetcher.db")]:
+                fetch = alex_leontiev_toolbox_python.caching.fetcher.Fetcher(
+                    bq_client=bq_client,
+                    **kwargs,
+                )
+                df, debug = fetch(table_name, is_return_debug_info=True)
+                assert len(df) == 10
+                assert debug["is_executed"]
+                df, debug = fetch(table_name, is_return_debug_info=True)
+                assert not debug["is_executed"]
+                logging.warning(fetch.quota_used_bytes)
         finally:
             if table_name is not None:
                 bq_client.delete_table(table_name, not_found_ok=True)
