@@ -60,6 +60,10 @@ class ToTabler:
         self._logger = logging.getLogger(self.__class__.__name__)
 
     @property
+    def prefix(self):
+        return self._prefix
+
+    @property
     def client(self):
         return self._client
 
