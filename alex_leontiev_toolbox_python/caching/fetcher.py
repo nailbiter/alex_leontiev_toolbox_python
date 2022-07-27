@@ -29,7 +29,7 @@ _DASH_REPLACE = "__"
 
 
 class Fetcher:
-    def __init__(self, sqlalchemy_db="sqlite+pysqlite:///:memory:", bq_client=None, db_prefix="", download_limit_gb=1, to_dataframe_kwargs={"progress_bar_type": "tqdm"}):
+    def __init__(self, sqlalchemy_db="sqlite+pysqlite:///:memory:", bq_client=None, db_prefix="", download_limit_gb=1, to_dataframe_kwargs={"progress_bar_type": "tqdm"}, post_call_callbacks=[]):
         if bq_client is None:
             bq_client = bigquery.Client()
         self._bq_client = bq_client
@@ -43,6 +43,7 @@ class Fetcher:
         self._download_limit_gb = download_limit_gb
         self._quota_used_bytes = 0
         self._to_dataframe_kwargs = to_dataframe_kwargs
+        self._post_call_callbacks = post_call_callbacks
 
     def _db_table(self, table_name):
         db_table = self._db_prefix + \
@@ -55,8 +56,6 @@ class Fetcher:
         d = {}
         if sqlalchemy.inspect(self._sqlalchemy_engine).has_table(db_table) and use_query_cache:
             d["is_executed"] = False
-            with self._sqlalchemy_engine.connect() as conn:
-                df = pd.read_sql(text(f"SELECT * FROM {db_table};"), conn)
             self._logger.warning(f"fetching \"{table_name}\" from cache")
         else:
             d["is_executed"] = True
@@ -67,6 +66,13 @@ class Fetcher:
             with self._sqlalchemy_engine.begin() as conn:
                 df.to_sql(db_table, conn, if_exists="replace", index=False)
             self._quota_used_bytes += num_bytes
+
+        with self._sqlalchemy_engine.connect() as conn:
+            df = pd.read_sql(text(f"SELECT * FROM {db_table};"), conn)
+
+        for cb in self._post_call_callbacks:
+            cb(d)
+
         return (df, d) if is_return_debug_info else df
 
     @property
