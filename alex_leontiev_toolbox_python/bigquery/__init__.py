@@ -19,6 +19,10 @@ ORGANIZATION:
 ==============================================================================="""
 from google.cloud import bigquery
 from google.api_core.exceptions import NotFound
+import inspect
+import types
+from typing import cast
+import logging
 
 
 def table_exists(table_name, bq_client=None, entity="table"):
@@ -42,6 +46,12 @@ def create_dataset(dataset_name, bq_client=None, exist_ok=False, location=None):
     """
     based on https://cloud.google.com/bigquery/docs/datasets#create-dataset
     """
+
+    # taken from https://stackoverflow.com/a/13514318
+    this_function_name = cast(
+        types.FrameType, inspect.currentframe()).f_code.co_name
+    logger = logging.getLogger(__name__).getChild(this_function_name)
+
     if bq_client is None:
         bq_client = bigquery.Client()
 
@@ -55,5 +65,6 @@ def create_dataset(dataset_name, bq_client=None, exist_ok=False, location=None):
         if location is not None:
             dataset.location = location
         dataset = bq_client.create_dataset(dataset, timeout=30)
+        logger.warning(f"creating dataset {dataset}")
 
     return dataset

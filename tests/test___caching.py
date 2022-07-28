@@ -24,6 +24,9 @@ import alex_leontiev_toolbox_python.caching.fetcher
 import alex_leontiev_toolbox_python.bigquery
 from google.cloud import bigquery
 import logging
+import pandas as pd
+import numpy as np
+import string
 
 IS_EXECUTE_BQ_TEST = int(os.environ.get("IS_EXECUTE_BQ_TEST", 0)) == 1
 
@@ -78,3 +81,34 @@ def test_to_table():
             if table_name is not None:
                 bq_client.delete_table(table_name, not_found_ok=True)
             bq_client.delete_dataset(dataset_name, not_found_ok=True)
+
+
+def test_upload():
+    location = "US"
+    bq_client = bigquery.Client(location=location)
+    to_table = alex_leontiev_toolbox_python.caching.to_tabler.ToTabler(
+        bq_client=bq_client)
+
+    df = pd.DataFrame(np.random.randn(10, 10),
+                      columns=list(string.ascii_lowercase)[:10])
+
+    tn, _d = to_table.upload_df(df, is_return_debug_info=True)
+    assert _d["is_executed"]
+    assert alex_leontiev_toolbox_python.bigquery.table_exists(
+        tn, bq_client=bq_client)
+    assert bq_client.get_table(tn).num_rows == 10
+
+    tn, _d = to_table.upload_df(df, is_return_debug_info=True)
+    assert not _d["is_executed"]
+
+    bq_client.delete_table(tn)
+
+    df = pd.DataFrame(np.random.randn(10, 10),
+                      columns=list(string.ascii_uppercase)[:10])
+    tn, _d = to_table.upload_df(df, is_return_debug_info=True, superkey=["A"])
+    assert _d["is_executed"]
+    assert _d["superkey"] == ["A"]
+    assert alex_leontiev_toolbox_python.bigquery.table_exists(
+        tn, bq_client=bq_client)
+    assert bq_client.get_table(tn).num_rows == 10
+    bq_client.delete_table(tn)

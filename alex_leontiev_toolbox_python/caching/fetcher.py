@@ -29,7 +29,7 @@ _DASH_REPLACE = "__"
 
 
 class Fetcher:
-    def __init__(self, sqlalchemy_db="sqlite+pysqlite:///:memory:", bq_client=None, db_prefix="", download_limit_gb=1, to_dataframe_kwargs={"progress_bar_type": "tqdm"}, post_call_callbacks=[]):
+    def __init__(self, sqlalchemy_db="sqlite+pysqlite:///:memory:", bq_client=None, db_prefix="t_", download_limit_gb=1, to_dataframe_kwargs={"progress_bar_type": "tqdm"}, post_call_callbacks=[]):
         if bq_client is None:
             bq_client = bigquery.Client()
         self._bq_client = bq_client
