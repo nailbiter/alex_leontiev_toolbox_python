@@ -55,7 +55,7 @@ class Fetcher:
         if to_dataframe_kwargs is None:
             to_dataframe_kwargs = self._to_dataframe_kwargs
         db_table = self._db_table(table_name)
-        d = {}
+        d = {"table_name": table_name}
         if sqlalchemy.inspect(self._sqlalchemy_engine).has_table(db_table) and use_query_cache:
             d["is_executed"] = False
             self._logger.warning(f"fetching \"{table_name}\" from cache")
