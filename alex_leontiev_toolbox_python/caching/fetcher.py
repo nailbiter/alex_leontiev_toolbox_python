@@ -51,7 +51,9 @@ class Fetcher:
         db_table = db_table.replace("-", _DASH_REPLACE)
         return db_table
 
-    def __call__(self, table_name, is_return_debug_info=False, use_query_cache=True):
+    def __call__(self, table_name, is_return_debug_info=False, use_query_cache=True, to_dataframe_kwargs=None):
+        if to_dataframe_kwargs is None:
+            to_dataframe_kwargs = self._to_dataframe_kwargs
         db_table = self._db_table(table_name)
         d = {}
         if sqlalchemy.inspect(self._sqlalchemy_engine).has_table(db_table) and use_query_cache:
@@ -62,7 +64,7 @@ class Fetcher:
             num_bytes = self._bq_client.get_table(table_name).num_bytes
             d["num_bytes"] = num_bytes
             df = self._bq_client.query(
-                f"select * from `{table_name}`").to_dataframe(**self._to_dataframe_kwargs)
+                f"select * from `{table_name}`").to_dataframe(**to_dataframe_kwargs)
             with self._sqlalchemy_engine.begin() as conn:
                 df.to_sql(db_table, conn, if_exists="replace", index=False)
             self._quota_used_bytes += num_bytes

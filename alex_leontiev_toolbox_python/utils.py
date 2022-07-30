@@ -54,7 +54,7 @@ def format_coverage(a, b, is_apply_len=False, is_inverse=False, equality_sign=" 
     return f"{a}{slash_sign}{b}{equality_sign}{a/b*100:04.2f}%"
 
 
-def pandas_count(df, fields, cnt_field_name="cnt", is_normalize_keys=False, is_set_index=False):
+def df_count(df, fields, cnt_field_name="cnt", is_normalize_keys=False, is_set_index=False):
     if is_normalize_keys:
         fields = sorted(set(fields))
     assert cnt_field_name not in fields
@@ -67,6 +67,10 @@ def pandas_count(df, fields, cnt_field_name="cnt", is_normalize_keys=False, is_s
     if is_set_index:
         df = df.set_index(fields)
     return df
+
+
+def df_frac(df, is_return_percent, is_format):
+    pass
 
 
 def is_pandas_superkey(df, candidate_superkey, is_normalize_keys=True, cnt_field_name="___cnt"):
