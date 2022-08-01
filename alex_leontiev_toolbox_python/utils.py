@@ -79,4 +79,4 @@ def is_pandas_superkey(df, candidate_superkey, is_normalize_keys=True, cnt_field
     """
     if is_normalize_keys:
         candidate_superkey = sorted(set(candidate_superkey))
-    return pandas_count(df, candidate_superkey, is_normalize_keys=is_normalize_keys, cnt_field_name=cnt_field_name)[cnt_field_name].max() == 1
+    return df_count(df, candidate_superkey, is_normalize_keys=is_normalize_keys, cnt_field_name=cnt_field_name)[cnt_field_name].max() == 1

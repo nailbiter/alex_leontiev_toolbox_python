@@ -19,6 +19,7 @@ ORGANIZATION:
 ==============================================================================="""
 import pandas as pd
 from jinja2 import Template
+#from alex_leontiev_toolbox_python.utils import is_pandas_superkey
 
 
 def schema_to_df(table_or_table_name, bq_client=None, is_return_comparable_object=False):
@@ -27,8 +28,10 @@ def schema_to_df(table_or_table_name, bq_client=None, is_return_comparable_objec
     df = pd.DataFrame([sf.to_api_repr() for sf in table.schema])
     return df.to_string() if is_return_comparable_object else df
 
+
 def _original_field_name(fields):
     pass
+
 
 def is_superkey(table_name, candidate_superkey, fetch=None, to_table=None, is_return_debug_info=False, is_normalize_keys=True, count_field_name="cnt"):
     """
@@ -45,8 +48,7 @@ def is_superkey(table_name, candidate_superkey, fetch=None, to_table=None, is_re
     if is_normalize_keys:
         candidate_superkey = sorted(set(candidate_superkey))
     d = {}
-    d["diff_tn"] = 
-    df = fetch(to_table(Template("""
+    d["diff_tn"] = to_table(Template("""
     with t as (
         select {{candidate_superkey|join(",")}}, count(1) {{cnt_fn}},
         from `{{table_name}}`
@@ -58,7 +60,9 @@ def is_superkey(table_name, candidate_superkey, fetch=None, to_table=None, is_re
         "candidate_superkey": candidate_superkey,
         "table_name": table_name,
         "cnt_fn": count_field_name,
-    })))
+    }))
+    # x =
+    df = fetch(d["diff_tn"])
     res = df[count_field_name].iloc[0] == 1
     return (res, d) if is_return_debug_info else res
 
