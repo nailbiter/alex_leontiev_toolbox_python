@@ -38,11 +38,18 @@ def format_bytes(b, unit="gib", is_raw=False):
     return (b, unit) if is_raw else f"{b:.2f}{unit}"
 
 
-def number_lines(txt, start_count=0, sep=": "):
+def number_lines(txt, start_count=0, sep=": ", start=None, end=None):
     lines = txt.split("\n")
     lines = [s.strip() for s in lines]
     num_digits = int(np.floor(np.log10(len(lines)))+1)
-    return "\n".join([f"{str(i+start_count).zfill(num_digits)}{sep}{line}" for i, line in enumerate(lines)])
+    lines = list(enumerate(lines))
+    if end is None and start is not None:
+        lines = lines[start:]
+    elif end is not None and start is None:
+        lines = lines[:end]
+    elif end is not None and start is not None:
+        lines = lines[start:end]
+    return "\n".join([f"{str(i+start_count).zfill(num_digits)}{sep}{line}" for i, line in lines])
 
 
 def format_coverage(a, b, is_apply_len=False, is_inverse=False, equality_sign=" = ", slash_sign="/"):

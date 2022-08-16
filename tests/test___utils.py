@@ -32,6 +32,12 @@ def test_number_lines():
     assert alex_leontiev_toolbox_python.utils.number_lines(
         "a\nb\nc") == "0: a\n1: b\n2: c"
     assert alex_leontiev_toolbox_python.utils.number_lines(
+        "a\nb\nc", end=2) == "0: a\n1: b"
+    assert alex_leontiev_toolbox_python.utils.number_lines(
+        "a\nb\nc", start=1) == "1: b\n2: c"
+    assert alex_leontiev_toolbox_python.utils.number_lines(
+        "a\nb\nc", start=1, end=2) == "1: b"
+    assert alex_leontiev_toolbox_python.utils.number_lines(
         "a\nb\nc", start_count=1, sep=":") == "1:a\n2:b\n3:c"
 
 

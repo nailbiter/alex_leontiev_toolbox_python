@@ -28,6 +28,7 @@ import logging
 import pandas as pd
 import numpy as np
 import string
+import json
 
 
 def test_is_fields_dependent():
@@ -41,14 +42,25 @@ def test_is_fields_dependent():
     df = pd.DataFrame(np.random.randn(10, 10),
                       columns=list(string.ascii_lowercase)[:10])
     df["x"] = 1
-    df["y"] = 1
+    df["y"] = df["x"] + 1
     tn = to_table.upload_df(df)
     assert alex_leontiev_toolbox_python.bigquery.table_exists(
         tn, bq_client=bq_client)
-    assert alex_leontiev_toolbox_python.bigquery.analysis.is_superkey(
-        tn, ["a"], to_table=to_table, fetch=fetch)
-    assert not alex_leontiev_toolbox_python.bigquery.analysis.is_fields_are_dependent(
-        tn, ["x"], ["a"], to_table=to_table, fetch=fetch)
-    assert alex_leontiev_toolbox_python.bigquery.analysis.is_fields_are_dependent(
-        tn, ["x"], ["y"], to_table=to_table, fetch=fetch)
+    res, d = alex_leontiev_toolbox_python.bigquery.analysis.is_superkey(
+        tn, ["a"], to_table=to_table, fetch=fetch, is_return_debug_info=True)
+    assert res, d
+    res, d = alex_leontiev_toolbox_python.bigquery.analysis.is_fields_are_dependent(
+        tn, ["x"], ["a"], to_table=to_table, fetch=fetch, is_return_debug_info=True)
+    assert not res, json.dumps(d)
+    res, d = alex_leontiev_toolbox_python.bigquery.analysis.is_fields_are_dependent(
+        tn, ["x"], ["y"], to_table=to_table, fetch=fetch, is_return_debug_info=True)
+    assert res, json.dumps(d)
     bq_client.delete_table(tn)
+
+
+def test_is_superkey():
+    pass
+
+
+def test_is_tables_equal():
+    pass
