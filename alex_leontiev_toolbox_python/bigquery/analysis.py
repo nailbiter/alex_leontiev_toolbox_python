@@ -35,7 +35,7 @@ def _original_field_name(fields):
     pass
 
 
-def is_superkey(table_name, candidate_superkey, fetch=None, to_table=None, is_return_debug_info=False, is_normalize_keys=True, count_field_name="cnt"):
+def is_superkey(table_name, candidate_superkey, fetch=None, to_table=None, is_return_debug_info=False, is_normalize_keys=True, count_field_name="cnt", fetch_lines=0):
     """
     0<=?"indexeness"<=1
     "indexeness"==1 <==> is_superkey
@@ -43,7 +43,7 @@ def is_superkey(table_name, candidate_superkey, fetch=None, to_table=None, is_re
     FIXME: 
         1. make `count_field_name` automatic (_original_field_name)
         2. only subset of fields
-        3. fetch_counterexamples
+        3. fetch_counterexamples (num_lines)
         4(done). "indexeness"
     """
     if fetch is None:
@@ -64,8 +64,8 @@ def is_superkey(table_name, candidate_superkey, fetch=None, to_table=None, is_re
         "cnt_fn": count_field_name,
     })
     d["diff_tn"] = to_table(d["rendered_sql"])
-    # x =
-    df = fetch(d["diff_tn"])
+    if fetch_lines > 0:
+        d["diff_df"] = fetch(d["diff_tn"])
 
     num_rows = to_table.client.get_table(d["diff_tn"]).num_rows
     d["indexeness"] = 1/(num_rows+1)
