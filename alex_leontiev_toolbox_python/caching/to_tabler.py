@@ -89,7 +89,7 @@ class ToTabler:
     def _is_valid_table_name(self, table_name):
         return len(table_name.split(".")[-1]) < _TABLE_NAME_LENGTH_MAX
 
-    def __call__(self, sql, preamble=None, dry_run=False, use_query_cache=True, is_return_debug_info=False):
+    def __call__(self, sql, preamble=None, dry_run=False, use_query_cache=True, is_return_debug_info=False, query_kwargs={}):
         d = dict(sql=_sql_to_hash(sql), preamble=preamble)
         hash_ = alex_leontiev_toolbox_python.utils.string_to_hash(
             json.dumps(d, sort_keys=True, ensure_ascii=True))
@@ -123,7 +123,7 @@ class ToTabler:
         else:
             is_executed = True
             if not dry_run:
-                self._client.query(rendered_sql).result()
+                self._client.query(rendered_sql, **query_kwargs).result()
                 self._quota_used_bytes += used_bytes
             else:
                 self._logger.warning("dry_run")
@@ -138,6 +138,7 @@ class ToTabler:
             "is_executed": is_executed,
             "dry_run": dry_run,
             "use_query_cache": use_query_cache,
+            "query_kwargs": query_kwargs,
         }
         for cb in self._post_call_callbacks:
             cb(r)
