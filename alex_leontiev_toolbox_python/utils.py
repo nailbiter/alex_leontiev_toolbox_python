@@ -76,8 +76,23 @@ def df_count(df, fields, cnt_field_name="cnt", is_normalize_keys=False, is_set_i
     return df
 
 
-def df_frac(df, is_return_percent, is_format):
-    pass
+def df_frac(df, cnt_field="cnt", frac_field=None, is_return_percent=True, is_format=False, stratification=None, is_inplace=True):
+    """
+    1. support stratification
+    1. support copy
+    """
+    if frac_field is None:
+        frac_field = f"frac({cnt_field_name})"
+        if is_return_percent:
+            frac_field += " %"
+    df[frac_field] = df[cnt_field]/df[cnt_field].sum()
+    if is_return_percent:
+        df[frac_field] *= 100
+    if is_format:
+        df[frac_field] = df[frac_field].apply(lambda x: f"{x:.2f}")
+        if is_return_percent:
+            df[frac_field] = df[frac_field]+"%"
+    return df
 
 
 def is_pandas_superkey(df, candidate_superkey, is_normalize_keys=True, cnt_field_name="___cnt"):
