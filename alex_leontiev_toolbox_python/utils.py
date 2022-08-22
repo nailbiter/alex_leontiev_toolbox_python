@@ -52,12 +52,12 @@ def number_lines(txt, start_count=0, sep=": ", start=None, end=None):
     return "\n".join([f"{str(i+start_count).zfill(num_digits)}{sep}{line}" for i, line in lines])
 
 
-def format_coverage(a, b, is_apply_len=False, is_inverse=False, equality_sign=" = ", slash_sign="/"):
+def format_coverage(a, b, is_apply_len=False, is_inverse=False, equality_sign=" = ", slash_sign="/", len_f=len):
     if is_apply_len:
-        a, b = len(a), len(b)
+        a, b = len_f(a), len_f(b)
     assert 0 <= a <= b
     if is_inverse:
-        b = a-b
+        a = b-a
     return f"{a}{slash_sign}{b}{equality_sign}{a/b*100:04.2f}%"
 
 
@@ -76,25 +76,26 @@ def df_count(df, fields, cnt_field_name="cnt", is_normalize_keys=False, is_set_i
     return df
 
 
-def df_frac(df, cnt_field="cnt", frac_field=None, is_return_percent=True, is_format=False, stratification=None, is_inplace=True):
+def df_frac(df, cnt_field_name="cnt", frac_field_name=None, is_return_percent=True, is_format=False, stratification=None, is_inplace=False):
     """
     1. support stratification
     1(done). support copy
-    1. test
+    1(done). test
     """
+    assert stratification is None
     if not is_inplace:
         df = df.copy()
-    if frac_field is None:
-        frac_field = f"frac({cnt_field_name})"
+    if frac_field_name is None:
+        frac_field_name = f"frac({cnt_field_name})"
         if is_return_percent:
-            frac_field += " %"
-    df[frac_field] = df[cnt_field]/df[cnt_field].sum()
+            frac_field_name += " %"
+    df[frac_field_name] = df[cnt_field_name]/df[cnt_field_name].sum()
     if is_return_percent:
-        df[frac_field] *= 100
+        df[frac_field_name] *= 100
     if is_format:
-        df[frac_field] = df[frac_field].apply(lambda x: f"{x:.2f}")
+        df[frac_field_name] = df[frac_field_name].apply(lambda x: f"{x:.2f}")
         if is_return_percent:
-            df[frac_field] = df[frac_field]+"%"
+            df[frac_field_name] = df[frac_field_name]+"%"
     return df
 
 

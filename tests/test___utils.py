@@ -19,6 +19,7 @@ ORGANIZATION:
 ==============================================================================="""
 import alex_leontiev_toolbox_python.utils
 import pandas as pd
+import numpy as np
 
 
 def test_format_bytes():
@@ -55,3 +56,25 @@ def test_is_pandas_superkey():
         pd.DataFrame({"a": [1, 2], "b": [1, 1]}), ["a"])
     assert not alex_leontiev_toolbox_python.utils.is_pandas_superkey(
         pd.DataFrame({"a": [1, 1], "b": [1, 1]}), ["a"])
+
+
+def test_df_frac():
+    df = pd.DataFrame({"cnt": [1, 2, 2, 5]})
+    df["x"] = df["cnt"]
+
+    dfp = alex_leontiev_toolbox_python.utils.df_frac(df)
+    assert set(dfp.columns) == {"x", "cnt", "frac(cnt) %"}
+    assert set(df.columns) == {"x", "cnt"}
+    assert np.linalg.norm(dfp["frac(cnt) %"] -
+                          np.array([10, 20, 20, 50])) < 1e-10
+
+    dfp = alex_leontiev_toolbox_python.utils.df_frac(df, frac_field_name="f")
+    assert set(dfp.columns) == {"x", "cnt", "f"}
+    assert set(df.columns) == {"x", "cnt"}
+    assert np.linalg.norm(dfp["f"] - np.array([10, 20, 20, 50])) < 1e-10
+
+    dfp = alex_leontiev_toolbox_python.utils.df_frac(df, cnt_field_name="x")
+    assert set(dfp.columns) == {"x", "cnt", "frac(x) %"}
+    assert set(df.columns) == {"x", "cnt"}
+    assert np.linalg.norm(dfp["frac(x) %"] -
+                          np.array([10, 20, 20, 50])) < 1e-10
