@@ -46,6 +46,8 @@ def test_format_coverage():
     assert alex_leontiev_toolbox_python.utils.format_coverage(
         3, 5) == "3/5 = 60.00%"
     assert alex_leontiev_toolbox_python.utils.format_coverage(
+        3, 5, is_inverse=True) == "2/5 = 40.00%"
+    assert alex_leontiev_toolbox_python.utils.format_coverage(
         3, 5, equality_sign="=") == "3/5=60.00%"
     assert alex_leontiev_toolbox_python.utils.format_coverage(
         3, 5, slash_sign=" / ") == "3 / 5 = 60.00%"
@@ -77,4 +79,18 @@ def test_df_frac():
     assert set(dfp.columns) == {"x", "cnt", "frac(x) %"}
     assert set(df.columns) == {"x", "cnt"}
     assert np.linalg.norm(dfp["frac(x) %"] -
+                          np.array([10, 20, 20, 50])) < 1e-10
+
+    df["f"] = ["a", "a", "a", "b"]
+    dfp = alex_leontiev_toolbox_python.utils.df_frac(df, stratification=["f"])
+    assert set(dfp.columns) == {"x", "cnt", "frac(cnt) %", "f"}
+    assert set(df.columns) == {"x", "cnt", "f"}
+    assert np.linalg.norm(dfp["frac(cnt) %"] -
+                          np.array([20, 40, 40, 100])) < 1e-10
+    df.pop("f")
+
+    dfp = alex_leontiev_toolbox_python.utils.df_frac(df, is_inplace=True)
+    assert set(dfp.columns) == {"x", "cnt", "frac(cnt) %"}
+    assert set(df.columns) == set(dfp.columns)
+    assert np.linalg.norm(dfp["frac(cnt) %"] -
                           np.array([10, 20, 20, 50])) < 1e-10

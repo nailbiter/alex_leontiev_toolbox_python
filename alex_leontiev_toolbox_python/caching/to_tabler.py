@@ -116,6 +116,7 @@ class ToTabler:
                 alex_leontiev_toolbox_python.utils.number_lines(rendered_sql))
             raise
 
+        job = None
         if self._table_exists(table_name) and use_query_cache:
             is_executed = False
             self._logger.warning(
@@ -123,7 +124,8 @@ class ToTabler:
         else:
             is_executed = True
             if not dry_run:
-                self._client.query(rendered_sql, **query_kwargs).result()
+                job = self._client.query(rendered_sql, **query_kwargs)
+                job.result()
                 self._quota_used_bytes += used_bytes
             else:
                 self._logger.warning("dry_run")
@@ -140,6 +142,15 @@ class ToTabler:
             "use_query_cache": use_query_cache,
             "query_kwargs": query_kwargs,
         }
+        if job is not None:
+            r = {
+                **r,
+                **{
+                    "job_id": job.job_id,
+                    "job_project": job.project,
+                    "job_location": job.location,
+                }
+            }
         for cb in self._post_call_callbacks:
             cb(r)
 

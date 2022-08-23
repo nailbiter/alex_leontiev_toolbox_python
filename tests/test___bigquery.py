@@ -33,5 +33,14 @@ def test_table_exists():
     assert not alex_leontiev_toolbox_python.bigquery.table_exists(
         "a.b.c", bq_client=bq_client)
 
+
 def test_query_bytes():
+#    raise NotImplementedError()
     pass
+
+
+def test_job_id_to_job():
+    job = alex_leontiev_toolbox_python.bigquery.job_id_to_job(
+        "38691128-02a7-4ec1-81f3-03dbca5b525d")
+    assert job.__class__.__name__ == "QueryJob"
+    assert job.query == "select * from `api-project-424250507607.b7a150d3.t_915d8cbae22f305fab72d94e9815e391`"

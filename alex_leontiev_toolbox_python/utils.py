@@ -78,18 +78,21 @@ def df_count(df, fields, cnt_field_name="cnt", is_normalize_keys=False, is_set_i
 
 def df_frac(df, cnt_field_name="cnt", frac_field_name=None, is_return_percent=True, is_format=False, stratification=None, is_inplace=False):
     """
-    1. support stratification
+    1(done). support stratification
     1(done). support copy
     1(done). test
     """
-    assert stratification is None
     if not is_inplace:
         df = df.copy()
     if frac_field_name is None:
         frac_field_name = f"frac({cnt_field_name})"
         if is_return_percent:
             frac_field_name += " %"
-    df[frac_field_name] = df[cnt_field_name]/df[cnt_field_name].sum()
+    if stratification is None:
+        df[frac_field_name] = df[cnt_field_name]/df[cnt_field_name].sum()
+    else:
+        df[frac_field_name] = df[cnt_field_name] / \
+            df.groupby(stratification)[cnt_field_name].transform(np.sum)
     if is_return_percent:
         df[frac_field_name] *= 100
     if is_format:

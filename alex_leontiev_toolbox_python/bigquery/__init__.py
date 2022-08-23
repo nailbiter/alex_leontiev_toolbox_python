@@ -68,3 +68,12 @@ def create_dataset(dataset_name, bq_client=None, exist_ok=False, location=None):
         logger.warning(f"creating dataset {dataset}")
 
     return dataset
+
+
+def job_id_to_job(job_id, bq_client=None, **kwargs):
+    """
+    FIXME: test
+    """
+    if bq_client is None:
+        bq_client = bigquery.Client()
+    return bq_client.get_job(job_id, **kwargs)
