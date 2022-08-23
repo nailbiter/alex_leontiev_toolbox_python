@@ -128,8 +128,8 @@ def test_is_tables_equal():
         res, d = is_tables_equal(tn, tn_shuffled, ["i"])
         assert res, d
 
-#        res, d = is_superkey(tn, ["x"])
-#        assert not res, d
+        res, d = is_tables_equal(tn, tn2, ["i"])
+        assert not res, d
     finally:
         for tn in tables:
             bq_client.delete_table(tn, not_found_ok=True)
