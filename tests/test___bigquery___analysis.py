@@ -32,6 +32,23 @@ import json
 import functools
 
 
+def test_schema_to_df():
+    bq_client = bigquery.Client()
+    TN = "bigquery-public-data.usa_names.usa_1910_2013"
+    res = alex_leontiev_toolbox_python.bigquery.analysis.schema_to_df(
+        TN, is_table_name_input=True, is_return_comparable_object=True)
+#    logging.warning(res)
+#    with open("/tmp/e2b43790_f8c1_4ce3_859a_00b167d768de.txt", "w") as f:
+#        f.write(res)
+    _RES = """name     type      mode                        description
+0   state   STRING  NULLABLE                 2-digit state code
+1  gender   STRING  NULLABLE           Sex (M=male or F=female)
+2    year  INTEGER  NULLABLE              4-digit year of birth
+3    name   STRING  NULLABLE    Given name of a person at birth
+4  number  INTEGER  NULLABLE  Number of occurrences of the name""".strip()
+    assert res.strip() == _RES
+
+
 def test_is_fields_dependent():
     location = "US"
     bq_client = bigquery.Client(location=location)

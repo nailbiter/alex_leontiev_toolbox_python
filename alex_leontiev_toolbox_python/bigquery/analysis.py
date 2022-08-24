@@ -19,7 +19,7 @@ ORGANIZATION:
 ==============================================================================="""
 import pandas as pd
 from jinja2 import Template
-#from alex_leontiev_toolbox_python.utils import is_pandas_superkey
+from google.cloud import bigquery
 from alex_leontiev_toolbox_python.caching.fetcher import Fetcher
 from alex_leontiev_toolbox_python.caching.to_tabler import ToTabler
 import inspect
@@ -30,7 +30,7 @@ import functools
 
 
 def schema_to_df(table_or_table_name, bq_client=None, is_return_comparable_object=False, is_table_name_input=False):
-    if bq_client is None:
+    if (bq_client is None) and is_table_name_input:
         bq_client = bigquery.Client()
     table = bq_client.get_table(
         table_or_table_name) if is_table_name_input else table_or_table_name
@@ -47,12 +47,16 @@ def is_superkey(table_name, candidate_superkey, fetch=None, to_table=None, is_re
     0<=?"indexeness"<=1
     "indexeness"==1 <==> is_superkey
 
+    fetch_lines==-1 <==> fetch all
+
     FIXME: 
         1. make `count_field_name` automatic (_original_field_name)
         2. only subset of fields
         3. fetch_counterexamples (num_lines)
         4(done). "indexeness"
     """
+    assert -1 <= fetch_lines
+
     if fetch is None:
         fetch = Fetcher()
     if to_table is None:
@@ -71,8 +75,15 @@ def is_superkey(table_name, candidate_superkey, fetch=None, to_table=None, is_re
         "cnt_fn": count_field_name,
     })
     d["diff_tn"] = to_table(d["rendered_sql"])
-    if fetch_lines > 0:
+    if fetch_lines == -1:
         d["diff_df"] = fetch(d["diff_tn"])
+    elif fetch_lines > 0:
+        d["diff_df"] = fetch(to_table(f"""
+        select *
+        from `{d["diff_tn"]}`
+        order by {",".join(candidate_superkey)}
+        limit {fetch_lines}
+        """))
 
     num_rows = to_table.client.get_table(d["diff_tn"]).num_rows
     d["indexeness"] = 1/(num_rows+1)

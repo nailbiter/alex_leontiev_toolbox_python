@@ -35,7 +35,7 @@ def test_table_exists():
 
 
 def test_query_bytes():
-#    raise NotImplementedError()
+    #    raise NotImplementedError()
     pass
 
 
@@ -44,3 +44,8 @@ def test_job_id_to_job():
         "38691128-02a7-4ec1-81f3-03dbca5b525d")
     assert job.__class__.__name__ == "QueryJob"
     assert job.query == "select * from `api-project-424250507607.b7a150d3.t_915d8cbae22f305fab72d94e9815e391`"
+
+
+def test_find_table_names_in_sql_source():
+    assert alex_leontiev_toolbox_python.bigquery.find_table_names_in_sql_source(
+        "select * from `api-project-424250507607.b7a150d3.t_915d8cbae22f305fab72d94e9815e391`") == {"api-project-424250507607.b7a150d3.t_915d8cbae22f305fab72d94e9815e391", }

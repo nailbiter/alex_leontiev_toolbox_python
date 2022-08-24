@@ -23,6 +23,7 @@ import inspect
 import types
 from typing import cast
 import logging
+import re
 
 
 def table_exists(table_name, bq_client=None, entity="table"):
@@ -77,3 +78,27 @@ def job_id_to_job(job_id, bq_client=None, **kwargs):
     if bq_client is None:
         bq_client = bigquery.Client()
     return bq_client.get_job(job_id, **kwargs)
+
+
+# https://cloud.google.com/bigquery/docs/tables
+# https://cloud.google.com/bigquery/docs/datasets#dataset-naming
+# https://cloud.google.com/resource-manager/docs/creating-managing-projects#before_you_begin
+"""
+FIXME (improve):
+    1. 
+"""
+TABLE_NAME_REGEX = re.compile(
+    r"""`([a-z0-9-]{5,29}[a-z0-9]\.[a-zA-Z0-9_]{1,1024}\.[\s\d\w]{1,1024})`""")
+
+
+def find_table_names_in_sql_source(sql_source, bq_client=None, is_use_bq_client=False, table_name_regex=TABLE_NAME_REGEX):
+    """
+    FIXME:
+        1. enable `is_use_bq_client`
+    """
+    if is_use_bq_client:
+        raise NotImplementedError()
+
+    if (bq_client is None) and is_use_bq_client:
+        bq_client = bigquery.Client()
+    return {tn for tn in table_name_regex.findall(sql_source)}
