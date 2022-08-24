@@ -85,7 +85,10 @@ def df_frac(df, cnt_field_name="cnt", frac_field_name=None, is_return_percent=Tr
     if not is_inplace:
         df = df.copy()
     if frac_field_name is None:
-        frac_field_name = f"frac({cnt_field_name})"
+        frac_field_name = f"frac({cnt_field_name}"
+        if stratification is not None:
+            frac_field_name += f"|{','.join(stratification)}"
+        frac_field_name += ")"
         if is_return_percent:
             frac_field_name += " %"
     if stratification is None:

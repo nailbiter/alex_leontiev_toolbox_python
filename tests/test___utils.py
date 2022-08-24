@@ -83,9 +83,9 @@ def test_df_frac():
 
     df["f"] = ["a", "a", "a", "b"]
     dfp = alex_leontiev_toolbox_python.utils.df_frac(df, stratification=["f"])
-    assert set(dfp.columns) == {"x", "cnt", "frac(cnt) %", "f"}
+    assert set(dfp.columns) == {"x", "cnt", "frac(cnt|f) %", "f"}
     assert set(df.columns) == {"x", "cnt", "f"}
-    assert np.linalg.norm(dfp["frac(cnt) %"] -
+    assert np.linalg.norm(dfp["frac(cnt|f) %"] -
                           np.array([20, 40, 40, 100])) < 1e-10
     df.pop("f")
 
