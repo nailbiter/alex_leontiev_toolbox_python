@@ -28,6 +28,8 @@ from typing import cast
 import logging
 import functools
 
+_DEFAULT_TABLE_ALIASES = ("tn1", "tn2")
+
 
 def schema_to_df(table_or_table_name, bq_client=None, is_return_comparable_object=False, is_table_name_input=False):
     if (bq_client is None) and is_table_name_input:
@@ -91,11 +93,62 @@ def is_superkey(table_name, candidate_superkey, fetch=None, to_table=None, is_re
     return (res, d) if is_return_debug_info else res
 
 
-def field_coverage_stats(table_name_1, table_name_2, fields, fetch=None, to_table=None, is_return_debug_info=False, is_normalize_keys=True, aliases=("tn1", "tn2")):
-    pass
+def field_coverage_stats(table_name_1, table_name_2, fields, fetch=None, to_table=None, is_return_debug_info=False, is_normalize_keys=True, aliases=_DEFAULT_TABLE_ALIASES):
+    if fetch is None:
+        fetch = Fetcher()
+    if to_table is None:
+        to_table = ToTabler()
+    if is_normalize_keys:
+        fields = sorted(set(fields))
+    d = {}
+    d["rendered_sql"] = Template("""
+    with t1 as (
+        select {{fields|join(",")}}, 1 {{aliases[0]}}
+        from `{{table_name_1}}`
+        group by {{fields|join(",")}}
+    )
+    , t2 as (
+        select {{fields|join(",")}}, 1 {{aliases[1]}}
+        from `{{table_name_2}}`
+        group by {{fields|join(",")}}
+    )
+    , t as (
+        select {{fields|join(",")}},
+            ifnull({{aliases[0]}}, 0) {{aliases[0]}},
+            ifnull({{aliases[1]}}, 0) {{aliases[1]}},
+        from t1 full outer join t2 using ({{fields|join(",")}})
+    )
+    select {{aliases|join(",")}},count(1) cnt
+    from t
+    group by {{aliases[0]}}, {{aliases[1]}}
+    """).render({
+        "table_name_1": table_name_1,
+        "table_name_2": table_name_2,
+        "aliases": aliases,
+        "fields": fields,
+    })
+    d["tn"] = to_table(d["rendered_sql"])
+    df = fetch(d["tn"])
 
+    df[list(aliases)] = (df[list(aliases)] == 1)
+    df["flag"] = list(zip(df.pop(aliases[0]), df.pop(aliases[1])))
+    if df.flag.nunique() == 1:
+        d["sign"] = "=="
+    elif df.flag.apply(lambda t: t[0]).nunique() == 1:
+        d["sign"] = ">="
+    elif df.flag.apply(lambda t: t[1]).nunique() == 1:
+        d["sign"] = "<="
+    else:
+        d["sign"] = "!="
+    df["label"] = df.pop("flag").apply({
+        (True, True): "∩".join(aliases),
+        (False, True): "-".join(list(aliases)[::-1]),
+        (True, False): "-".join(aliases),
+    }.get)
+    df.set_index("label", inplace=True)
+    df.sort_index(inplace=True)
 
-_DEFAULT_TABLE_ALIASES = ("tn1", "tn2")
+    return (df, d) if is_return_debug_info else df
 
 
 def _diff_sql_f(fn, aliases=None):

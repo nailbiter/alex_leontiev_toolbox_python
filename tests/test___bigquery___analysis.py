@@ -32,6 +32,50 @@ import json
 import functools
 
 
+_TO_TABLER_KWARGS = {"wait_after_dataframe_upload_seconds": 5}
+
+
+def test_field_coverage_stats():
+    location = "US"
+    bq_client = bigquery.Client(location=location)
+    to_table = alex_leontiev_toolbox_python.caching.to_tabler.ToTabler(
+        bq_client=bq_client, **_TO_TABLER_KWARGS)
+    fetch = alex_leontiev_toolbox_python.caching.fetcher.Fetcher(
+        bq_client=bq_client)
+    field_coverage_stats = functools.partial(alex_leontiev_toolbox_python.bigquery.analysis.field_coverage_stats,
+                                             to_table=to_table, fetch=fetch, is_return_debug_info=True)
+
+    df1 = pd.DataFrame(np.random.randn(10, 10),
+                       columns=list(string.ascii_lowercase)[:10])
+    df2 = df1.copy()
+    df1["i"] = ["x"]*5+["y"]*5
+    df2["i"] = ["a"]*5+["b"]*5
+    df3 = pd.concat([df1, df2])
+
+    tables = set()
+
+    try:
+        tn1 = to_table.upload_df(df1)
+        tn2 = to_table.upload_df(df2)
+        tn3 = to_table.upload_df(df3)
+        tables.update([tn1, tn2, tn3])
+
+        res, d = field_coverage_stats(tn3, tn3, ["i"])
+        assert d["sign"] == "==", (res, d)
+
+        res, d = field_coverage_stats(tn1, tn2, ["i"])
+        assert d["sign"] == "!=", (res, d)
+
+        res, d = field_coverage_stats(tn1, tn3, ["i"])
+        assert d["sign"] == "<=", (res, d)
+
+        res, d = field_coverage_stats(tn3, tn1, ["i"])
+        assert d["sign"] == ">=", (res, d)
+    finally:
+        for tn in tables:
+            bq_client.delete_table(tn, not_found_ok=True)
+
+
 def test_schema_to_df():
     bq_client = bigquery.Client()
     TN = "bigquery-public-data.usa_names.usa_1910_2013"
@@ -53,7 +97,7 @@ def test_is_fields_dependent():
     location = "US"
     bq_client = bigquery.Client(location=location)
     to_table = alex_leontiev_toolbox_python.caching.to_tabler.ToTabler(
-        bq_client=bq_client)
+        bq_client=bq_client, **_TO_TABLER_KWARGS)
     fetch = alex_leontiev_toolbox_python.caching.fetcher.Fetcher(
         bq_client=bq_client)
 
@@ -87,7 +131,7 @@ def test_is_superkey():
     location = "US"
     bq_client = bigquery.Client(location=location)
     to_table = alex_leontiev_toolbox_python.caching.to_tabler.ToTabler(
-        bq_client=bq_client)
+        bq_client=bq_client, **_TO_TABLER_KWARGS)
     fetch = alex_leontiev_toolbox_python.caching.fetcher.Fetcher(
         bq_client=bq_client)
     is_superkey = functools.partial(alex_leontiev_toolbox_python.bigquery.analysis.is_superkey,
@@ -118,7 +162,7 @@ def test_is_tables_equal():
     location = "US"
     bq_client = bigquery.Client(location=location)
     to_table = alex_leontiev_toolbox_python.caching.to_tabler.ToTabler(
-        bq_client=bq_client)
+        bq_client=bq_client, **_TO_TABLER_KWARGS)
     fetch = alex_leontiev_toolbox_python.caching.fetcher.Fetcher(
         bq_client=bq_client)
     is_tables_equal = functools.partial(alex_leontiev_toolbox_python.bigquery.analysis.is_tables_equal,
