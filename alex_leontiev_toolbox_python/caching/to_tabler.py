@@ -26,16 +26,20 @@ import hashlib
 import alex_leontiev_toolbox_python.utils
 import alex_leontiev_toolbox_python.bigquery
 import alex_leontiev_toolbox_python.caching
+from alex_leontiev_toolbox_python.caching._sql_to_hash_sqlparse import sql_to_hash_sqlparse
 from jinja2 import Template
 import json
 from datetime import datetime, timedelta
 import logging
 import time
 import pandas as pd
+import sqlparse
 
 
-def _sql_to_hash(sql):
-    return alex_leontiev_toolbox_python.utils.string_to_hash(sql, algo="md5")
+def _sql_to_hash(sql, algo="md5", salt=None):
+    if salt is not None:
+        sql = sql+str(salt)
+    return alex_leontiev_toolbox_python.utils.string_to_hash(sql, algo=algo)
 
 
 _DEFAULT_DATASET_NAME = "dataset"
@@ -46,7 +50,7 @@ _TABLE_NAME_LENGTH_MAX = 1024
 
 
 class ToTabler:
-    def __init__(self, prefix=None, bq_client=None, assume_sync=False, post_call_callbacks=[], is_create_dataset_if_not_exists=True, wait_after_dataframe_upload_seconds=2):
+    def __init__(self, prefix=None, bq_client=None, assume_sync=False, post_call_callbacks=[], is_create_dataset_if_not_exists=True, wait_after_dataframe_upload_seconds=2, sql_hash_algo="simple"):
         if bq_client is None:
             bq_client = bigquery.Client()
         if prefix is None:
@@ -59,6 +63,13 @@ class ToTabler:
             prefix += "."
         self._prefix = prefix
         self._client = bq_client
+
+        if sql_hash_algo == "simple":
+            self._sql_to_hash = _sql_to_hash
+        elif sql_hash_algo == "sqlparse":
+            self._sql_to_hash = sql_to_hash_sqlparse
+        else:
+            raise NotImplementedError(sql_hash_algo)
 
         _dataset = ".".join(prefix.split(".")[:2])
         if is_create_dataset_if_not_exists:
@@ -89,8 +100,8 @@ class ToTabler:
     def _is_valid_table_name(self, table_name):
         return len(table_name.split(".")[-1]) < _TABLE_NAME_LENGTH_MAX
 
-    def __call__(self, sql, preamble=None, dry_run=False, use_query_cache=True, is_return_debug_info=False, query_kwargs={}):
-        d = dict(sql=_sql_to_hash(sql), preamble=preamble)
+    def __call__(self, sql, preamble=None, dry_run=False, use_query_cache=True, is_return_debug_info=False, query_kwargs={}, salt=None):
+        d = dict(sql=self._sql_to_hash(sql, salt=salt), preamble=preamble)
         hash_ = alex_leontiev_toolbox_python.utils.string_to_hash(
             json.dumps(d, sort_keys=True, ensure_ascii=True))
         table_name = self._prefix + hash_
