@@ -49,3 +49,8 @@ def test_job_id_to_job():
 def test_find_table_names_in_sql_source():
     assert alex_leontiev_toolbox_python.bigquery.find_table_names_in_sql_source(
         "select * from `api-project-424250507607.b7a150d3.t_915d8cbae22f305fab72d94e9815e391`") == {"api-project-424250507607.b7a150d3.t_915d8cbae22f305fab72d94e9815e391", }
+    assert alex_leontiev_toolbox_python.bigquery.find_table_names_in_sql_source(
+        """
+        --`api-project-424250507607.b7a150d3.t_uocuoueoeu`
+        select * from `api-project-424250507607.b7a150d3.t_oeroygrccyo123123`
+    """) == {"api-project-424250507607.b7a150d3.t_oeroygrccyo123123", }

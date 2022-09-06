@@ -24,6 +24,7 @@ import types
 from typing import cast
 import logging
 import re
+import sqlparse
 
 
 def table_exists(table_name, bq_client=None, entity="table"):
@@ -101,4 +102,7 @@ def find_table_names_in_sql_source(sql_source, bq_client=None, is_use_bq_client=
 
     if (bq_client is None) and is_use_bq_client:
         bq_client = bigquery.Client()
+
+    sql_source = sqlparse.format(sql_source, strip_comments=True)
+
     return {tn for tn in table_name_regex.findall(sql_source)}

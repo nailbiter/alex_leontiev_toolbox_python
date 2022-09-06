@@ -38,9 +38,10 @@ def format_bytes(b, unit="gib", is_raw=False):
     return (b, unit) if is_raw else f"{b:.2f}{unit}"
 
 
-def number_lines(txt, start_count=0, sep=": ", start=None, end=None):
+def number_lines(txt, start_count=0, sep=": ", start=None, end=None, is_strip=False):
     lines = txt.split("\n")
-    lines = [s.strip() for s in lines]
+    if is_strip:
+        lines = [s.strip() for s in lines]
     num_digits = int(np.floor(np.log10(len(lines)))+1)
     lines = list(enumerate(lines))
     if end is None and start is not None:
@@ -76,7 +77,7 @@ def df_count(df, fields, cnt_field_name="cnt", is_normalize_keys=False, is_set_i
     return df
 
 
-def df_frac(df, cnt_field_name="cnt", frac_field_name=None, is_return_percent=True, is_format=False, stratification=None, is_inplace=False,is_return_debug_info=False):
+def df_frac(df, cnt_field_name="cnt", frac_field_name=None, is_return_percent=True, is_format=False, stratification=None, is_inplace=False, is_return_debug_info=False):
     """
     1(done). support stratification
     1(done). support copy
@@ -104,10 +105,10 @@ def df_frac(df, cnt_field_name="cnt", frac_field_name=None, is_return_percent=Tr
             df[frac_field_name] = df[frac_field_name]+"%"
 
     d = {
-        "frac_field_name":frac_field_name,
+        "frac_field_name": frac_field_name,
     }
 
-    return (df,d) if is_return_debug_info else df
+    return (df, d) if is_return_debug_info else df
 
 
 def is_pandas_superkey(df, candidate_superkey, is_normalize_keys=True, cnt_field_name="___cnt"):
