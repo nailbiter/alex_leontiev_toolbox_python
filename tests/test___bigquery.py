@@ -20,6 +20,7 @@ ORGANIZATION:
 
 import alex_leontiev_toolbox_python.bigquery
 from google.cloud import bigquery
+import pandas as pd
 
 
 def test_table_exists():
@@ -54,3 +55,24 @@ def test_find_table_names_in_sql_source():
         --`api-project-424250507607.b7a150d3.t_uocuoueoeu`
         select * from `api-project-424250507607.b7a150d3.t_oeroygrccyo123123`
     """) == {"api-project-424250507607.b7a150d3.t_oeroygrccyo123123", }
+
+
+def test_list_tables():
+    dates = [ts.to_pydatetime() for ts in pd.date_range(
+        start="20160801", end="20170801").to_list()]
+
+    res = alex_leontiev_toolbox_python.bigquery.list_tables(
+        "bigquery-public-data.google_analytics_sample.ga_sessions_")
+    assert len(res) == len(dates)
+    assert res[0] == "20160801", res[0]
+
+    res = alex_leontiev_toolbox_python.bigquery.list_tables(
+        "bigquery-public-data.google_analytics_sample.ga_sessions_", is_parse_dates=True)
+    assert len(res) == len(dates), res
+#    assert res[0] == datetime(2016, 8, 1)
+    assert res == dates, res
+
+    res = alex_leontiev_toolbox_python.bigquery.list_tables(
+        "bigquery-public-data.google_analytics_sample.ga_sessions_", is_include_prefix=True)
+    assert len(res) == len(dates), res
+    assert res[0] == "bigquery-public-data.google_analytics_sample.ga_sessions_20160801", res[0]

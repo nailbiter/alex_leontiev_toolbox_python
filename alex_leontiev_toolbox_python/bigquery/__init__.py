@@ -25,6 +25,7 @@ from typing import cast
 import logging
 import re
 import sqlparse
+from datetime import datetime, timedelta
 
 
 def table_exists(table_name, bq_client=None, entity="table"):
@@ -79,6 +80,26 @@ def job_id_to_job(job_id, bq_client=None, **kwargs):
     if bq_client is None:
         bq_client = bigquery.Client()
     return bq_client.get_job(job_id, **kwargs)
+
+
+def list_tables(prefix, bq_client=None, is_include_prefix=False, is_parse_dates=False, dates_fmt="%Y%m%d"):
+    if bq_client is None:
+        bq_client = bigquery.Client()
+    prefix = prefix.split(".")
+    assert 2 <= len(prefix) <= 3, prefix
+    if len(prefix) == 2:
+        prefix.append("")
+    dataset, prefix = prefix[:-1], prefix[-1]
+    dataset = ".".join(dataset)
+    tns = [t.table_id for t in bq_client.list_tables(
+        dataset) if t.table_id.startswith(prefix)]
+    if is_include_prefix:
+        tns = [f"{dataset}.{tn}" for tn in tns]
+    else:
+        tns = [tn[len(prefix):] for tn in tns]
+    if is_parse_dates:
+        tns = [datetime.strptime(tn, dates_fmt) for tn in tns]
+    return sorted(tns)
 
 
 # https://cloud.google.com/bigquery/docs/tables
