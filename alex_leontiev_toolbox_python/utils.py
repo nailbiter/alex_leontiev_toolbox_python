@@ -21,6 +21,7 @@ import hashlib
 import numpy as np
 import string
 import pandas as pd
+import collections
 
 
 def string_to_hash(s, algo="md5"):
@@ -118,3 +119,20 @@ def is_pandas_superkey(df, candidate_superkey, is_normalize_keys=True, cnt_field
     if is_normalize_keys:
         candidate_superkey = sorted(set(candidate_superkey))
     return df_count(df, candidate_superkey, is_normalize_keys=is_normalize_keys, cnt_field_name=cnt_field_name)[cnt_field_name].max() == 1
+
+
+def continuous_intervals(arr, step=1, is_presort=True):
+    if is_presort:
+        arr = sorted(set(arr))
+    res = None
+    for x in arr:
+        if (res is None):
+            res = [{"start": x, "current": x}]
+        elif x == res[-1]["current"]+step:
+            res[-1]["current"] += step
+        else:
+            res[-1]["end"] = res[-1].pop("current")
+            res.append({"start": x, "current": x})
+    if "current" in res[-1]:
+        res[-1]["end"] = res[-1].pop("current")
+    return res

@@ -20,6 +20,7 @@ ORGANIZATION:
 import alex_leontiev_toolbox_python.utils
 import pandas as pd
 import numpy as np
+import functools
 
 
 def test_format_bytes():
@@ -94,3 +95,10 @@ def test_df_frac():
     assert set(df.columns) == set(dfp.columns)
     assert np.linalg.norm(dfp["frac(cnt) %"] -
                           np.array([10, 20, 20, 50])) < 1e-10
+
+
+def test_continuous_intervals():
+    assert alex_leontiev_toolbox_python.utils.continuous_intervals(
+        [1, 2, 3, 4, 5]) == [{"start": 1, "end": 5}]
+    assert alex_leontiev_toolbox_python.utils.continuous_intervals(
+        [1, 2, 4, 5]) == [{"start": 1, "end": 2}, {"start": 4, "end": 5}]
