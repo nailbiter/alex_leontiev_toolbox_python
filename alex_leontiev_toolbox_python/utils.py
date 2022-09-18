@@ -126,7 +126,7 @@ def continuous_intervals(arr, step=1, is_presort=True):
         arr = sorted(set(arr))
     res = None
     for x in arr:
-        if (res is None):
+        if res is None:
             res = [{"start": x, "current": x}]
         elif x == res[-1]["current"]+step:
             res[-1]["current"] += step
