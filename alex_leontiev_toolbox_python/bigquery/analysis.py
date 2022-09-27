@@ -235,7 +235,7 @@ def is_tables_equal(table_name_1, table_name_2, superkey, fetch=None, to_table=N
                 {{aliases[0]}}.{{f}} {{aliases[0]}}_{{f}},
                 {{aliases[1]}}.{{f}} {{aliases[1]}}_{{f}},
                 {%endfor%}
-            from `{{table_name_1}}` {{aliases[0]}} {{join}} `{{table_name_1}}` {{aliases[1]}} using ({{superkey|join(",")}})
+            from `{{table_name_1}}` {{aliases[0]}} {{join}} `{{table_name_2}}` {{aliases[1]}} using ({{superkey|join(",")}})
         )
         select *
         from joined

@@ -174,11 +174,12 @@ def test_is_tables_equal():
     df_shuffled = df.sample(frac=1.0)
     assert len(df) == len(df_shuffled)
     df2 = df.copy()
-    df2["a"] = 42
+    df2["a"] = 42.0
     assert len(df) == len(df2)
 
     tables = set()
 
+    d = {}
     try:
         tn = to_table.upload_df(df)
         tn_shuffled = to_table.upload_df(df_shuffled)
@@ -191,6 +192,13 @@ def test_is_tables_equal():
 
         res, d = is_tables_equal(tn, tn2, ["i"])
         assert not res, d
+
+#        assert False, d
+    except Exception:
+        with open("/tmp/E33F2262-AE5B-4489-8B57-F9876D57FD1B.log.json", "w") as f:
+            json.dump({k: v for k, v in d.items()
+                      if k not in "diff_sql_f".split()}, f)
+        raise
     finally:
         for tn in tables:
             bq_client.delete_table(tn, not_found_ok=True)
