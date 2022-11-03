@@ -56,8 +56,9 @@ class ToTabler:
         if prefix is None:
             prefix = f"{bq_client.project}.{_DEFAULT_DATASET_NAME}.t_"
         self._wait_after_dataframe_upload_seconds = wait_after_dataframe_upload_seconds
-        assert not assume_sync
+
         self._assume_sync = assume_sync
+
         assert 2 <= len(prefix.split(".")) <= 3, prefix
         if len(prefix.split(".")) == 2:
             prefix += "."
@@ -82,6 +83,22 @@ class ToTabler:
         self._post_call_callbacks = post_call_callbacks
         self._logger = logging.getLogger(self.__class__.__name__)
 
+        if assume_sync:
+            self._recompute_tables_cache()
+
+    def _recompute_tables_cache(self):
+        if self._assume_sync:
+            self._tables_cache = set(alex_leontiev_toolbox_python.bigquery.list_tables(
+                self.prefix,
+                bq_client=self.client,
+                is_include_prefix=True,
+            ))
+            self._logger.warning(f"{len(self._tables_cache)} tables recycled")
+        else:
+            self._tables_cache = set()
+
+        return self
+
     @property
     def prefix(self):
         return self._prefix
@@ -95,7 +112,10 @@ class ToTabler:
         return self._quota_used_bytes
 
     def _table_exists(self, table_name):
-        return alex_leontiev_toolbox_python.bigquery.table_exists(table_name, bq_client=self._client)
+        if self._assume_sync:
+            return table_name in self._tables_cache
+        else:
+            return alex_leontiev_toolbox_python.bigquery.table_exists(table_name, bq_client=self._client)
 
     def _is_valid_table_name(self, table_name):
         return len(table_name.split(".")[-1]) < _TABLE_NAME_LENGTH_MAX
@@ -134,6 +154,7 @@ class ToTabler:
                 f"table `{table_name}` exists ==> not recreate")
         else:
             is_executed = True
+            self._tables_cache.add(table_name)
             if not dry_run:
                 job = self._client.query(rendered_sql, **query_kwargs)
                 job.result()

@@ -43,7 +43,7 @@ def test_to_table():
             alex_leontiev_toolbox_python.bigquery.create_dataset(
                 dataset_name, location=location, exist_ok=True)
             to_table = alex_leontiev_toolbox_python.caching.to_tabler.ToTabler(
-                f"{dataset_name}.t_", bq_client=bq_client)
+                f"{dataset_name}.t_", bq_client=bq_client, assume_sync=True)
             sql = """
                 SELECT
                   gender
