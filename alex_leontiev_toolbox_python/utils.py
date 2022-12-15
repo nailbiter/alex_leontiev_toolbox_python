@@ -22,6 +22,7 @@ import numpy as np
 import string
 import pandas as pd
 import collections
+import functools
 
 
 def string_to_hash(s, algo="md5"):
@@ -136,3 +137,8 @@ def continuous_intervals(arr, step=1, is_presort=True):
     if "current" in res[-1]:
         res[-1]["end"] = res[-1].pop("current")
     return res
+def composition(f1,f2):
+    @functools.wraps(f2)
+    def _composition(*args,f1_composition_args=[],f1_composition_kwargs={},**kwargs):
+        return f1(f2(*args,**kwargs),*f1_composition_args,**f1_composition_kwargs)
+    return _composition
