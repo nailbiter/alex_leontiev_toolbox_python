@@ -31,9 +31,7 @@ def string_to_hash(s, algo="md5"):
 
 
 def format_bytes(b, unit="gib", is_raw=False):
-    _UNITS = {
-        **{f"{w}ib": 2**(10*(i+1)) for i, w in enumerate(list("kmgtp"))}
-    }
+    _UNITS = {**{f"{w}ib": 2 ** (10 * (i + 1)) for i, w in enumerate(list("kmgtp"))}}
     assert unit in _UNITS
 
     b /= _UNITS[unit]
@@ -44,7 +42,7 @@ def number_lines(txt, start_count=0, sep=": ", start=None, end=None, is_strip=Fa
     lines = txt.split("\n")
     if is_strip:
         lines = [s.strip() for s in lines]
-    num_digits = int(np.floor(np.log10(len(lines)))+1)
+    num_digits = int(np.floor(np.log10(len(lines))) + 1)
     lines = list(enumerate(lines))
     if end is None and start is not None:
         lines = lines[start:]
@@ -52,34 +50,61 @@ def number_lines(txt, start_count=0, sep=": ", start=None, end=None, is_strip=Fa
         lines = lines[:end]
     elif end is not None and start is not None:
         lines = lines[start:end]
-    return "\n".join([f"{str(i+start_count).zfill(num_digits)}{sep}{line}" for i, line in lines])
+    return "\n".join(
+        [f"{str(i+start_count).zfill(num_digits)}{sep}{line}" for i, line in lines]
+    )
 
 
-def format_coverage(a, b, is_apply_len=False, is_inverse=False, equality_sign=" = ", slash_sign="/", len_f=len):
+def format_coverage(
+    a,
+    b,
+    is_apply_len=False,
+    is_inverse=False,
+    equality_sign=" = ",
+    slash_sign="/",
+    len_f=len,
+):
     if is_apply_len:
         a, b = len_f(a), len_f(b)
     assert 0 <= a <= b
     if is_inverse:
-        a = b-a
+        a = b - a
     return f"{a}{slash_sign}{b}{equality_sign}{a/b*100:04.2f}%"
 
 
-def df_count(df, fields, cnt_field_name="cnt", is_normalize_keys=False, is_set_index=False):
+def df_count(
+    df, fields, cnt_field_name="cnt", is_normalize_keys=False, is_set_index=False
+):
     if is_normalize_keys:
         fields = sorted(set(fields))
     assert cnt_field_name not in fields
-    df = pd.DataFrame([
-        {**{k: v for k, v in (zip(fields, values if len(fields)
-                              > 1 else [values]))}, cnt_field_name: len(slice_)}
-        for values, slice_
-        in df.groupby(fields)
-    ])
+    df = pd.DataFrame(
+        [
+            {
+                **{
+                    k: v
+                    for k, v in (zip(fields, values if len(fields) > 1 else [values]))
+                },
+                cnt_field_name: len(slice_),
+            }
+            for values, slice_ in df.groupby(fields)
+        ]
+    )
     if is_set_index:
         df = df.set_index(fields)
     return df
 
 
-def df_frac(df, cnt_field_name="cnt", frac_field_name=None, is_return_percent=True, is_format=False, stratification=None, is_inplace=False, is_return_debug_info=False):
+def df_frac(
+    df,
+    cnt_field_name="cnt",
+    frac_field_name=None,
+    is_return_percent=True,
+    is_format=False,
+    stratification=None,
+    is_inplace=False,
+    is_return_debug_info=False,
+):
     """
     1(done). support stratification
     1(done). support copy
@@ -95,16 +120,17 @@ def df_frac(df, cnt_field_name="cnt", frac_field_name=None, is_return_percent=Tr
         if is_return_percent:
             frac_field_name += " %"
     if stratification is None:
-        df[frac_field_name] = df[cnt_field_name]/df[cnt_field_name].sum()
+        df[frac_field_name] = df[cnt_field_name] / df[cnt_field_name].sum()
     else:
-        df[frac_field_name] = df[cnt_field_name] / \
-            df.groupby(stratification)[cnt_field_name].transform(np.sum)
+        df[frac_field_name] = df[cnt_field_name] / df.groupby(stratification)[
+            cnt_field_name
+        ].transform(np.sum)
     if is_return_percent:
         df[frac_field_name] *= 100
     if is_format:
         df[frac_field_name] = df[frac_field_name].apply(lambda x: f"{x:.2f}")
         if is_return_percent:
-            df[frac_field_name] = df[frac_field_name]+"%"
+            df[frac_field_name] = df[frac_field_name] + "%"
 
     d = {
         "frac_field_name": frac_field_name,
@@ -113,13 +139,23 @@ def df_frac(df, cnt_field_name="cnt", frac_field_name=None, is_return_percent=Tr
     return (df, d) if is_return_debug_info else df
 
 
-def is_pandas_superkey(df, candidate_superkey, is_normalize_keys=True, cnt_field_name="___cnt"):
+def is_pandas_superkey(
+    df, candidate_superkey, is_normalize_keys=True, cnt_field_name="___cnt"
+):
     """
     FIXME: field_name make smarter default, bulletproof and remove from kwargs
     """
     if is_normalize_keys:
         candidate_superkey = sorted(set(candidate_superkey))
-    return df_count(df, candidate_superkey, is_normalize_keys=is_normalize_keys, cnt_field_name=cnt_field_name)[cnt_field_name].max() == 1
+    return (
+        df_count(
+            df,
+            candidate_superkey,
+            is_normalize_keys=is_normalize_keys,
+            cnt_field_name=cnt_field_name,
+        )[cnt_field_name].max()
+        == 1
+    )
 
 
 def continuous_intervals(arr, step=1, is_presort=True):
@@ -129,7 +165,7 @@ def continuous_intervals(arr, step=1, is_presort=True):
     for x in arr:
         if res is None:
             res = [{"start": x, "current": x}]
-        elif x == res[-1]["current"]+step:
+        elif x == res[-1]["current"] + step:
             res[-1]["current"] += step
         else:
             res[-1]["end"] = res[-1].pop("current")
@@ -137,8 +173,11 @@ def continuous_intervals(arr, step=1, is_presort=True):
     if "current" in res[-1]:
         res[-1]["end"] = res[-1].pop("current")
     return res
-def composition(f1,f2):
+
+
+def composition(f1, f2):
     @functools.wraps(f2)
-    def _composition(*args,f1_composition_args=[],f1_composition_kwargs={},**kwargs):
-        return f1(f2(*args,**kwargs),*f1_composition_args,**f1_composition_kwargs)
+    def _composition(*args, f1_composition_args=[], f1_composition_kwargs={}, **kwargs):
+        return f1(f2(*args, **kwargs), *f1_composition_args, **f1_composition_kwargs)
+
     return _composition
