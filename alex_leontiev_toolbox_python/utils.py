@@ -179,5 +179,7 @@ def composition(f1, f2):
     @functools.wraps(f2)
     def _composition(*args, f1_composition_args=[], f1_composition_kwargs={}, **kwargs):
         return f1(f2(*args, **kwargs), *f1_composition_args, **f1_composition_kwargs)
+    _composition.f1 = f1
+    _composition.f2 = f2
 
     return _composition
