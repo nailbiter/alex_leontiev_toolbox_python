@@ -29,3 +29,7 @@ def test_num_to_string():
     assert string_to_num("04", 2) == 4
     assert num_to_string(4.2, 2, 3) == "04d200"
     assert string_to_num("04d200", 2, 3) == 4.2
+
+
+def test_compressor():
+    pass

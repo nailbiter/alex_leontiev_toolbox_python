@@ -20,6 +20,7 @@ ORGANIZATION:
 import functools
 import numpy as np
 import re
+import copy
 
 
 @functools.lru_cache
@@ -83,3 +84,29 @@ def string_to_num(
     if frac_part_len > 0:
         res += int(m.group(2)) / 10**frac_part_len
     return res
+
+
+class NameCompressor:
+    def __init__(self, sep="_", is_allow_collisions=True):
+        self._sep = sep
+        self._forward_map = {}
+        self._is_allow_collisions = is_allow_collisions
+        self._logger = logging.getLogger(self.__class__.__name__)
+
+    def __call__(self, s):
+        res = "".join([t[0] for t in s.split(self._sep)])
+        if res in self._forward_map.values():
+            if self._is_allow_collisions:
+                logging.warning(f'collision for "{s}" ==> "{res}"')
+            else:
+                assert False, (s, res)
+        self._forward_map[s] = res
+        return res
+
+    @property
+    def forward_map(self):
+        return copy.deepcopy(self._forward_map)
+
+    @property
+    def backward_map(self):
+        return {v: k for k, v in self._forward_map}
