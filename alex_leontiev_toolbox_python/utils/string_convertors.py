@@ -21,6 +21,7 @@ import functools
 import numpy as np
 import re
 import copy
+import logging
 
 
 @functools.lru_cache
@@ -87,17 +88,21 @@ def string_to_num(
 
 
 class NameCompressor:
-    def __init__(self, sep="_", is_allow_collisions=True):
+    def __init__(self, sep="_", is_allow_collisions=True, compress_prefixes=[]):
         self._sep = sep
         self._forward_map = {}
         self._is_allow_collisions = is_allow_collisions
         self._logger = logging.getLogger(self.__class__.__name__)
+        self._compress_prefixes = compress_prefixes
 
     def __call__(self, s):
+        for p in self._compress_prefixes:
+            if s.startswith(p):
+                s = s[len(p) :]
         res = "".join([t[0] for t in s.split(self._sep)])
         if res in self._forward_map.values():
             if self._is_allow_collisions:
-                logging.warning(f'collision for "{s}" ==> "{res}"')
+                self._logger.warning(f'collision for "{s}" ==> "{res}"')
             else:
                 assert False, (s, res)
         self._forward_map[s] = res

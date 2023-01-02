@@ -21,7 +21,9 @@ ORGANIZATION:
 from alex_leontiev_toolbox_python.utils.string_convertors import (
     num_to_string,
     string_to_num,
+    NameCompressor,
 )
+import pytest
 
 
 def test_num_to_string():
@@ -32,4 +34,8 @@ def test_num_to_string():
 
 
 def test_compressor():
-    pass
+    compressor = NameCompressor(is_allow_collisions=False, compress_prefixes=["is_"])
+    assert compressor("is_enable_x") == "ex"
+    assert compressor("correction_coefficient") == "cc"
+    with pytest.raises(AssertionError) as e:
+        _ = compressor("cutoff_coefficient")
