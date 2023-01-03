@@ -23,6 +23,9 @@ import string
 import pandas as pd
 import collections
 import functools
+import logging
+import time
+from datetime import datetime, timedelta
 
 
 def string_to_hash(s, algo="md5"):
@@ -179,7 +182,33 @@ def composition(f1, f2):
     @functools.wraps(f2)
     def _composition(*args, f1_composition_args=[], f1_composition_kwargs={}, **kwargs):
         return f1(f2(*args, **kwargs), *f1_composition_args, **f1_composition_kwargs)
+
     _composition.f1 = f1
     _composition.f2 = f2
 
     return _composition
+
+
+class TimeItContext:
+    def __init__(self, title, is_warning_on_start=False, is_warning_on_end=False):
+        self._logger = logging.getLogger(self.__class__.__name__)
+        self._title = title
+        self._is_warning_on_start = is_warning_on_start
+        self._is_warning_on_end = is_warning_on_end
+
+    def __enter__(self, *args, **kwargs):
+        self._tic = time.time()
+        if self._is_warning_on_start:
+            self._logger.warning(
+                f'"{self._title}" started at {str(datetime.fromtimestamp(self._tic))}'
+            )
+
+    def __exit__(self, *args, **kwargs):
+        self._toc = time.time()
+        if self._is_warning_on_end:
+            self._logger.warning(
+                f'"{self._title}" ended at {str(datetime.fromtimestamp(self._toc))}'
+            )
+        self._logger.warning(
+            f'"{self._title}" took {str(timedelta(seconds=(self._toc-self._tic)))}'
+        )
