@@ -22,6 +22,8 @@ import numpy as np
 import re
 import copy
 import logging
+import pandas as pd
+import itertools
 
 
 @functools.lru_cache
@@ -70,6 +72,9 @@ def string_to_num(
     frac_part_len=0,
     joining_sym="d",
 ):
+    """
+    FIXME: maybe, reintegrate in `num_to_string` via `is_inverse` key
+    """
     regex = re.compile(
         r"(\d"
         + f"{{{int_part_len}}})"
@@ -118,3 +123,37 @@ class NameCompressor:
     @property
     def backward_map(self):
         return {v: k for k, v in self._forward_map.items()}
+
+
+def compress_dicts(
+    dicts,
+    fillna_values={},
+    is_prune_same_values=False,
+    column_names_compressor=lambda x: x,
+    stringifiers={},
+    in_processor=lambda x: x,
+    is_return_debug_info=False,
+    joining_symbol="_",
+):
+    d = {}
+
+    df = pd.DataFrame(dicts)
+    for cn in df.columns:
+        if cn in fillna_values:
+            df[cn] = df[cn].fillna(fillna_values[cn])
+    df = in_processor(df)
+    for cn in df.columns:
+        df[cn] = df[cn].apply(stringifiers.get(cn, str))
+
+    if is_prune_same_values:
+        df.drop(
+            columns=[cn for cn in df.columns if df[cn].nunique() == 1], inplace=True
+        )
+
+    df.columns = map(column_names_compressor, df.columns)
+
+    rs = df.to_dict(orient="records")
+    res = [joining_symbol.join(itertools.chain(*r.items())) for r in rs]
+    d["backward_map"] = dict(zip(res, dicts))
+
+    return (res, d) if is_return_debug_info else res
