@@ -24,6 +24,7 @@ from alex_leontiev_toolbox_python.utils.string_convertors import (
     NameCompressor,
 )
 import pytest
+import logging
 
 
 def test_num_to_string():
@@ -36,6 +37,17 @@ def test_num_to_string():
 def test_compressor():
     compressor = NameCompressor(is_allow_collisions=False, compress_prefixes=["is_"])
     assert compressor("is_enable_x") == "ex"
+    assert compressor("is_enable_x") == "ex"
     assert compressor("correction_coefficient") == "cc"
+    assert compressor.forward_map == {
+        "is_enable_x": "ex",
+        "correction_coefficient": "cc",
+    }
+    assert compressor.backward_map == {
+        "ex": "is_enable_x",
+        "cc": "correction_coefficient",
+    }
     with pytest.raises(AssertionError) as e:
-        _ = compressor("cutoff_coefficient")
+        s = "cutoff_coefficient"
+        res = compressor(s)
+        logging.error((s, res))

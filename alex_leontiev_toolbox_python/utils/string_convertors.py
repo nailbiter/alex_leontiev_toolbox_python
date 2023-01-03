@@ -96,11 +96,14 @@ class NameCompressor:
         self._compress_prefixes = compress_prefixes
 
     def __call__(self, s):
+        _s = s
         for p in self._compress_prefixes:
-            if s.startswith(p):
-                s = s[len(p) :]
-        res = "".join([t[0] for t in s.split(self._sep)])
-        if res in self._forward_map.values():
+            if _s.startswith(p):
+                _s = _s[len(p) :]
+        res = "".join([t[0] for t in _s.split(self._sep)])
+        if (res in self._forward_map.values()) and (
+            (s, res) not in self._forward_map.items()
+        ):
             if self._is_allow_collisions:
                 self._logger.warning(f'collision for "{s}" ==> "{res}"')
             else:
@@ -114,4 +117,4 @@ class NameCompressor:
 
     @property
     def backward_map(self):
-        return {v: k for k, v in self._forward_map}
+        return {v: k for k, v in self._forward_map.items()}
