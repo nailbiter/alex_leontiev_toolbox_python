@@ -18,6 +18,8 @@ ORGANIZATION:
 
 ==============================================================================="""
 import alex_leontiev_toolbox_python.utils
+from alex_leontiev_toolbox_python.utils import TimeItContext
+import time
 import pandas as pd
 import numpy as np
 import functools
@@ -134,3 +136,10 @@ def test_composition():
     assert f2f1(3, 4) == 49
     assert f2f1.f1(6) == 36
     assert f2f1.f2(4, 5) == 9
+
+
+def test_timeit_context():
+    report_dict = {}
+    with TimeItContext("chunk", report_dict=report_dict):
+        time.sleep(2)
+    assert np.abs(report_dict["duration_seconds"] - 2) < 1e-2

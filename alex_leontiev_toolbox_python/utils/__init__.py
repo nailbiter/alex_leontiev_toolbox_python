@@ -190,11 +190,18 @@ def composition(f1, f2):
 
 
 class TimeItContext:
-    def __init__(self, title, is_warning_on_start=False, is_warning_on_end=False):
+    def __init__(
+        self,
+        title,
+        is_warning_on_start=False,
+        is_warning_on_end=False,
+        report_dict=None,
+    ):
         self._logger = logging.getLogger(self.__class__.__name__)
         self._title = title
         self._is_warning_on_start = is_warning_on_start
         self._is_warning_on_end = is_warning_on_end
+        self._report_dict = report_dict
 
     def __enter__(self, *args, **kwargs):
         self._tic = time.time()
@@ -209,6 +216,9 @@ class TimeItContext:
             self._logger.warning(
                 f'"{self._title}" ended at {str(datetime.fromtimestamp(self._toc))}'
             )
+        duration_seconds = self._toc - self._tic
+        if self._report_dict is not None:
+            self._report_dict["duration_seconds"] = duration_seconds
         self._logger.warning(
-            f'"{self._title}" took {str(timedelta(seconds=(self._toc-self._tic)))}'
+            f'"{self._title}" took {str(timedelta(seconds=duration_seconds))}'
         )
