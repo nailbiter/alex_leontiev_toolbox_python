@@ -134,3 +134,5 @@ dmypy.json
 poetry.lock
 .envrc
 .fetcher.db
+.token.json
+client_secret.json
