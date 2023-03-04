@@ -84,18 +84,21 @@ class DbCacheWrap:
         self,
         sqlalchemy_string,
         save_restore=(_canonical_json, json.loads),
+        ignore_kwargs=set(),
     ):
         self._sqlalchemy_string = sqlalchemy_string
         self._engine = create_engine(sqlalchemy_string, echo=False)
         self._sessionmaker = sessionmaker(bind=self._engine)
         Base.metadata.create_all(self._engine)
         self._save_restore = save_restore
+        self._ignore_kwargs = ignore_kwargs
 
     def __call__(self, f):
         save, restore = self._save_restore
 
         @functools.wraps(f)
         def _f(*args, is_force_cache_miss=False, **kwargs):
+            kwargs = {k: v for k, v in kwargs.items() if k not in self._ignore_kwargs}
             input_json = save({"args": args, "kwargs": kwargs})
             session = self._sessionmaker()
 
