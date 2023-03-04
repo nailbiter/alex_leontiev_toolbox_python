@@ -131,8 +131,14 @@ dmypy.json
 #vim
 *.swo
 *.swp
+
+#misc
 poetry.lock
 .envrc
 .fetcher.db
 .token.json
 client_secret.json
+
+#emacs
+\#*\#
+.\#*
