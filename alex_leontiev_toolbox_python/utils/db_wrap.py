@@ -98,8 +98,7 @@ class DbCacheWrap:
 
         @functools.wraps(f)
         def _f(*args, is_force_cache_miss=False, **kwargs):
-            kwargs = {k: v for k, v in kwargs.items() if k not in self._ignore_kwargs}
-            input_json = save({"args": args, "kwargs": kwargs})
+            input_json = save({"args": args, "kwargs": {k: v for k, v in kwargs.items() if k not in self._ignore_kwargs}})
             session = self._sessionmaker()
 
             cache_record = (
