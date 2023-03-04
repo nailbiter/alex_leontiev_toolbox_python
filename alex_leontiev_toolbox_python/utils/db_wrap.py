@@ -35,6 +35,41 @@ Base = declarative_base()
 _canonical_json = functools.partial(json.dumps, sort_keys=True)
 
 
+class CacheRecord(Base):
+    __tablename__ = "cache_records"
+
+    uuid = Column(String, primary_key=True)
+    input_json = Column(String)
+    output_json = Column(String)
+    creation_date = Column(DateTime)
+
+    def __init__(self, input_json, output_json, creation_date=None):
+        self.input_json = input_json
+        self.output_json = output_json
+        self.uuid = str(uuid.uuid4())
+        self.creation_date = datetime.now() if creation_date is None else creation_date
+
+
+#    def __repr__(self):
+#        return "<User(name='%s', fullname='%s', nickname='%s')>" % (
+#            self.name,
+#            self.fullname,
+#            self.nickname,
+#        )
+
+
+class CacheAccessRecord(Base):
+    __tablename__ = "cache_access_records"
+    uuid = Column(String, primary_key=True)
+    cache_record_uuid = Column(String, ForeignKey("cache_records.uuid"))
+    date = Column(DateTime)
+
+    def __init__(self, cache_record_uuid, date=None):
+        self.uuid = str(uuid.uuid4())
+        self.cache_record_uuid = cache_record_uuid
+        self.date = datetime.now() if date is None else date
+
+
 class DbCacheWrap:
     """
     TODO:
