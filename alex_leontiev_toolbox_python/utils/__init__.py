@@ -19,13 +19,15 @@ ORGANIZATION:
 ==============================================================================="""
 import hashlib
 import numpy as np
-import string
 import pandas as pd
+import string
 import collections
 import functools
 import logging
 import time
 from datetime import datetime, timedelta
+import os
+import sqlite3
 
 
 def string_to_hash(s, algo="md5"):
@@ -222,3 +224,37 @@ class TimeItContext:
         self._logger.warning(
             f'"{self._title}" took {str(timedelta(seconds=duration_seconds))}'
         )
+
+
+_ASSEMBLE_CALL_STATS_DB_FILE_NAME_ENVVAR = "ASSEMBLE_CALL_STATS_DB_FILE_NAME"
+
+
+def assemble_call_stats(db_file_name=None, coll_name="call_stats"):
+    if db_file_name is None:
+        db_file_name = os.environ[_ASSEMBLE_CALL_STATS_DB_FILE_NAME_ENVVAR]
+
+    def consumer(f_):
+        @functools.wraps(f_)
+        def f(*args, **kwargs):
+            tic = time.time()
+            res = f_(*args, **kwargs)
+            toc = time.time()
+
+            conn = sqlite3.connect(db_file_name)
+            pd.DataFrame(
+                [
+                    {
+                        "name": f.__name__,
+                        "dt": datetime.now().isoformat(),
+                        "tictoc": toc - tic,
+                        "__file__": __file__,
+                    }
+                ]
+            ).to_sql(coll_name, conn, if_exists="append", index=None)
+            conn.close()
+
+            return res
+
+        return f
+
+    return consumer

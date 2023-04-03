@@ -142,3 +142,5 @@ client_secret.json
 #emacs
 \#*\#
 .\#*
+
+.call_stats.db
