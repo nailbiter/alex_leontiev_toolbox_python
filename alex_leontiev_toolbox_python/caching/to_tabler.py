@@ -26,7 +26,9 @@ import hashlib
 import alex_leontiev_toolbox_python.utils
 import alex_leontiev_toolbox_python.bigquery
 import alex_leontiev_toolbox_python.caching
-from alex_leontiev_toolbox_python.caching._sql_to_hash_sqlparse import sql_to_hash_sqlparse
+from alex_leontiev_toolbox_python.caching._sql_to_hash_sqlparse import (
+    sql_to_hash_sqlparse,
+)
 from jinja2 import Template
 import json
 from datetime import datetime, timedelta
@@ -38,7 +40,7 @@ import sqlparse
 
 def _sql_to_hash(sql, algo="md5", salt=None):
     if salt is not None:
-        sql = sql+str(salt)
+        sql = sql + str(salt)
     return alex_leontiev_toolbox_python.utils.string_to_hash(sql, algo=algo)
 
 
@@ -50,7 +52,16 @@ _TABLE_NAME_LENGTH_MAX = 1024
 
 
 class ToTabler:
-    def __init__(self, prefix=None, bq_client=None, assume_sync=False, post_call_callbacks=[], is_create_dataset_if_not_exists=True, wait_after_dataframe_upload_seconds=2, sql_hash_algo="simple"):
+    def __init__(
+        self,
+        prefix=None,
+        bq_client=None,
+        assume_sync=False,
+        post_call_callbacks=[],
+        is_create_dataset_if_not_exists=True,
+        wait_after_dataframe_upload_seconds=2,
+        sql_hash_algo="simple",
+    ):
         if bq_client is None:
             bq_client = bigquery.Client()
         if prefix is None:
@@ -75,10 +86,12 @@ class ToTabler:
         _dataset = ".".join(prefix.split(".")[:2])
         if is_create_dataset_if_not_exists:
             alex_leontiev_toolbox_python.bigquery.create_dataset(
-                _dataset, bq_client=bq_client, exist_ok=True)
+                _dataset, bq_client=bq_client, exist_ok=True
+            )
         else:
             assert alex_leontiev_toolbox_python.bigquery.table_exists(
-                _dataset, bq_client=bq_client, entity="dataset"), f"ds \"{_dataset}\" does not exist"
+                _dataset, bq_client=bq_client, entity="dataset"
+            ), f'ds "{_dataset}" does not exist'
         self._quota_used_bytes = 0
         self._post_call_callbacks = post_call_callbacks
         self._logger = logging.getLogger(self.__class__.__name__)
@@ -88,11 +101,13 @@ class ToTabler:
 
     def _recompute_tables_cache(self):
         if self._assume_sync:
-            self._tables_cache = set(alex_leontiev_toolbox_python.bigquery.list_tables(
-                self.prefix,
-                bq_client=self.client,
-                is_include_prefix=True,
-            ))
+            self._tables_cache = set(
+                alex_leontiev_toolbox_python.bigquery.list_tables(
+                    self.prefix,
+                    bq_client=self.client,
+                    is_include_prefix=True,
+                )
+            )
             self._logger.warning(f"{len(self._tables_cache)} tables recycled")
         else:
             self._tables_cache = set()
@@ -115,15 +130,27 @@ class ToTabler:
         if self._assume_sync:
             return table_name in self._tables_cache
         else:
-            return alex_leontiev_toolbox_python.bigquery.table_exists(table_name, bq_client=self._client)
+            return alex_leontiev_toolbox_python.bigquery.table_exists(
+                table_name, bq_client=self._client
+            )
 
     def _is_valid_table_name(self, table_name):
         return len(table_name.split(".")[-1]) < _TABLE_NAME_LENGTH_MAX
 
-    def __call__(self, sql, preamble=None, dry_run=False, use_query_cache=True, is_return_debug_info=False, query_kwargs={}, salt=None):
+    def __call__(
+        self,
+        sql,
+        preamble=None,
+        dry_run=False,
+        use_query_cache=True,
+        is_return_debug_info=False,
+        query_kwargs={},
+        salt=None,
+    ):
         d = dict(sql=self._sql_to_hash(sql, salt=salt), preamble=preamble)
         hash_ = alex_leontiev_toolbox_python.utils.string_to_hash(
-            json.dumps(d, sort_keys=True, ensure_ascii=True))
+            json.dumps(d, sort_keys=True, ensure_ascii=True)
+        )
         table_name = self._prefix + hash_
         assert self._is_valid_table_name(table_name)
 
@@ -133,25 +160,28 @@ class ToTabler:
         }
         if preamble is not None:
             env["preamble"] = preamble
-        rendered_sql = Template("""
+        rendered_sql = Template(
+            """
         {{preamble}}
         create or replace table `{{table_name}}` as (
             {{sql}}
         )
-        """).render(env)
+        """
+        ).render(env)
         try:
             used_bytes = alex_leontiev_toolbox_python.bigquery.query_bytes(
-                rendered_sql, self._client)
+                rendered_sql, self._client
+            )
         except Exception:
             self._logger.error(
-                alex_leontiev_toolbox_python.utils.number_lines(rendered_sql))
+                alex_leontiev_toolbox_python.utils.number_lines(rendered_sql)
+            )
             raise
 
         job = None
         if self._table_exists(table_name) and use_query_cache:
             is_executed = False
-            self._logger.warning(
-                f"table `{table_name}` exists ==> not recreate")
+            self._logger.warning(f"table `{table_name}` exists ==> not recreate")
         else:
             is_executed = True
             self._tables_cache.add(table_name)
@@ -166,7 +196,9 @@ class ToTabler:
             "sql": sql,
             "rendered_sql": rendered_sql,
             "table_name": table_name,
-            "datetime_formatted": datetime.now().strftime(alex_leontiev_toolbox_python.caching.DATETIME_FORMAT),
+            "datetime_formatted": datetime.now().strftime(
+                alex_leontiev_toolbox_python.caching.DATETIME_FORMAT
+            ),
             "preamble": preamble,
             "used_bytes": used_bytes,
             "is_executed": is_executed,
@@ -181,25 +213,36 @@ class ToTabler:
                     "job_id": job.job_id,
                     "job_project": job.project,
                     "job_location": job.location,
-                }
+                },
             }
         for cb in self._post_call_callbacks:
             cb(r)
 
         return (table_name, r) if is_return_debug_info else table_name
 
-    def upload_df(self, df, superkey=None, wait_after_dataframe_upload_seconds=None, additional_prefix="u_", use_query_cache=True, is_return_debug_info=False, dry_run=False):
+    def upload_df(
+        self,
+        df,
+        superkey=None,
+        wait_after_dataframe_upload_seconds=None,
+        additional_prefix="u_",
+        use_query_cache=True,
+        is_return_debug_info=False,
+        dry_run=False,
+    ):
         if wait_after_dataframe_upload_seconds is None:
-            wait_after_dataframe_upload_seconds = self._wait_after_dataframe_upload_seconds
+            wait_after_dataframe_upload_seconds = (
+                self._wait_after_dataframe_upload_seconds
+            )
         debug_info = {}
         if superkey is not None:
             debug_info["superkey"] = superkey
-            assert alex_leontiev_toolbox_python.utils.is_pandas_superkey(
-                df, superkey)
+            assert alex_leontiev_toolbox_python.utils.is_pandas_superkey(df, superkey)
             df = df.sort_values(by=superkey)
         else:
             self._logger.warning(
-                "uploading without superkey ==> hash will depend on row order")
+                "uploading without superkey ==> hash will depend on row order"
+            )
         m = hashlib.md5()
         for cn in df.columns:
             m.update(cn.encode())
@@ -209,14 +252,19 @@ class ToTabler:
         assert self._is_valid_table_name(table_name)
         if self._table_exists(table_name) and use_query_cache:
             debug_info["is_executed"] = False
-            self._logger.warning(
-                f"table `{table_name}` exists ==> not recreate")
+            self._logger.warning(f"table `{table_name}` exists ==> not recreate")
         else:
             debug_info["is_executed"] = True
             if not dry_run:
                 self._client.load_table_from_dataframe(
-                    df, table_name, job_config=bigquery.LoadJobConfig(write_disposition="WRITE_TRUNCATE"))
-                self._logger.warning(f"creating table \"{table_name}\"")
+                    df,
+                    table_name,
+                    job_config=bigquery.LoadJobConfig(
+                        write_disposition="WRITE_TRUNCATE"
+                    ),
+                )
+                self._tables_cache.add(table_name)
+                self._logger.warning(f'creating table "{table_name}"')
             else:
                 self._logger.warning("dry_run")
             time.sleep(wait_after_dataframe_upload_seconds)
