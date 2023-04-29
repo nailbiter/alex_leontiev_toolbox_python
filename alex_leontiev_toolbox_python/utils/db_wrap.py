@@ -9,7 +9,7 @@
      OPTIONS: ---
 REQUIREMENTS: ---
         BUGS: ---
-       NOTES: ---
+       NOTES: todo: exception handling in cached function
       AUTHOR: Alex Leontiev (alozz1991@gmail.com)
 ORGANIZATION: 
      VERSION: ---
