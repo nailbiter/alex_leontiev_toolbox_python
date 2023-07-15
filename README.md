@@ -12,3 +12,13 @@ Alex Leontiev's misc Python toolbox
 ```sh
 poetry run pytest tests/test___caching.py
 ```
+
+## theory
+
+### "opaque" vs "transparent" wrappers
+
+I call a class `WA` a **wrapper** for class `A`, when:
+
+1. `WA`'s constructor accepts a single argument being member of class `A`
+
+I call a wrapper 
