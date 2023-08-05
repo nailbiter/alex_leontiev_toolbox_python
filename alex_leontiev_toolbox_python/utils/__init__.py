@@ -231,7 +231,9 @@ _ASSEMBLE_CALL_STATS_DB_FILE_NAME_ENVVAR = "ASSEMBLE_CALL_STATS_DB_FILE_NAME"
 
 def assemble_call_stats(db_file_name=None, coll_name="call_stats"):
     if db_file_name is None:
-        db_file_name = os.environ[_ASSEMBLE_CALL_STATS_DB_FILE_NAME_ENVVAR]
+        db_file_name = os.environ.get(_ASSEMBLE_CALL_STATS_DB_FILE_NAME_ENVVAR)
+    if db_file_name is None:
+        logging.warning('db_file_name is none ==> `assemble_call_stats` will do nothing')
 
     def consumer(f_):
         @functools.wraps(f_)
@@ -240,18 +242,19 @@ def assemble_call_stats(db_file_name=None, coll_name="call_stats"):
             res = f_(*args, **kwargs)
             toc = time.time()
 
-            conn = sqlite3.connect(db_file_name)
-            pd.DataFrame(
-                [
-                    {
-                        "name": f.__name__,
-                        "dt": datetime.now().isoformat(),
-                        "tictoc": toc - tic,
-                        "__file__": __file__,
-                    }
-                ]
-            ).to_sql(coll_name, conn, if_exists="append", index=None)
-            conn.close()
+            if db_file_name is not None:
+                conn = sqlite3.connect(db_file_name)
+                pd.DataFrame(
+                    [
+                        {
+                            "name": f.__name__,
+                            "dt": datetime.now().isoformat(),
+                            "tictoc": toc - tic,
+                            "__file__": __file__,
+                        }
+                    ]
+                ).to_sql(coll_name, conn, if_exists="append", index=None)
+                conn.close()
 
             return res
 
