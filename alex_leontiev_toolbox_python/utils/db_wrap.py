@@ -28,7 +28,7 @@ from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, create_eng
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
 
-from _common.requests_cache import RequestGet
+# from _common.requests_cache import RequestGet
 
 Base = declarative_base()
 
@@ -73,7 +73,7 @@ class CacheAccessRecord(Base):
 class DbCacheWrap:
     """
     TODO:
-        1. support cache expiration
+        1. support cache expiration <--
         2(done). support force cache miss
         3(done). support force set answer
         4. support list/export

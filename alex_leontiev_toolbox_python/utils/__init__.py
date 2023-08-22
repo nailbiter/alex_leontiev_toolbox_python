@@ -192,6 +192,9 @@ def composition(f1, f2):
 
 
 class TimeItContext:
+    """
+    FIXME: also implement as a decorator
+    """
     def __init__(
         self,
         title,
@@ -233,7 +236,9 @@ def assemble_call_stats(db_file_name=None, coll_name="call_stats"):
     if db_file_name is None:
         db_file_name = os.environ.get(_ASSEMBLE_CALL_STATS_DB_FILE_NAME_ENVVAR)
     if db_file_name is None:
-        logging.warning('db_file_name is none ==> `assemble_call_stats` will do nothing')
+        logging.warning(
+            "db_file_name is none ==> `assemble_call_stats` will do nothing"
+        )
 
     def consumer(f_):
         @functools.wraps(f_)
