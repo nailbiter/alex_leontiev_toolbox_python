@@ -70,6 +70,14 @@ class CacheAccessRecord(Base):
         self.date = datetime.now() if date is None else date
 
 
+def standard_save(obj, mode: typing.Literal["args", "return"] = None) -> str:
+    return _canonical_json(obj)
+
+
+def standard_restore(s: str, mode: typing.Literal["args", "return"] = None):
+    return json.loads(s)
+
+
 class DbCacheWrap:
     """
     TODO:
@@ -83,7 +91,8 @@ class DbCacheWrap:
     def __init__(
         self,
         sqlalchemy_string,
-        save_restore=(_canonical_json, json.loads),
+        save_restore=(standard_save, standard_restore),
+        # save_restore=(_canonical_json, json.loads),
         ignore_kwargs=set(),
     ):
         self._sqlalchemy_string = sqlalchemy_string
@@ -104,7 +113,8 @@ class DbCacheWrap:
                     "kwargs": {
                         k: v for k, v in kwargs.items() if k not in self._ignore_kwargs
                     },
-                }
+                },
+                mode="args",
             )
             session = self._sessionmaker()
 
@@ -122,7 +132,7 @@ class DbCacheWrap:
 
             if is_force_cache_miss or (not is_cache_hit):
                 logging.warning("cache miss ==> fetch")
-                res_json = save(f(*args, **kwargs))
+                res_json = save(f(*args, **kwargs), mode="return")
                 cache_record = CacheRecord(input_json=input_json, output_json=res_json)
                 access_date = cache_record.creation_date
                 session.add(cache_record)
@@ -136,7 +146,7 @@ class DbCacheWrap:
 
             session.commit()
 
-            return restore(res_json)
+            return restore(res_json, mode="return")
 
         _f.set_result = self.set_result
 
