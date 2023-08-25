@@ -23,12 +23,10 @@ import json
 import logging
 import uuid
 from datetime import datetime
-
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 from sqlalchemy.orm.exc import NoResultFound
-
-# from _common.requests_cache import RequestGet
+import typing
 
 Base = declarative_base()
 
