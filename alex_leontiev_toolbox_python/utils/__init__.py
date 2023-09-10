@@ -27,8 +27,9 @@ import logging
 import time
 from datetime import datetime, timedelta
 import os
+from os import path
 import sqlite3
-
+import uuid
 
 def string_to_hash(s, algo="md5"):
     assert algo in ["md5", "sha256"]
@@ -195,6 +196,7 @@ class TimeItContext:
     """
     FIXME: also implement as a decorator
     """
+
     def __init__(
         self,
         title,
@@ -266,3 +268,11 @@ def assemble_call_stats(db_file_name=None, coll_name="call_stats"):
         return f
 
     return consumer
+
+
+def get_random_fn(
+    ext,
+    tmp_dir="/tmp",
+):
+    assert ext.startswith("."), ext
+    return path.join(tmp_dir, f"{uuid.uuid4()}{ext}")
