@@ -21,12 +21,14 @@ import pandas as pd
 import operator
 from alex_leontiev_toolbox_python.utils import get_random_fn
 import click
+import logging
 
 AVAILABLE_OUT_FORMATS = ["str", "csv", "json", "html", "plain", "csvfn"]
 
 _DEFAULT_FORMATTERS = {
     "html": operator.methodcaller("to_html"),
 }
+
 
 def build_click_options(f):
     arr = [
@@ -36,14 +38,27 @@ def build_click_options(f):
             type=click.Choice(AVAILABLE_OUT_FORMATS),
             default="plain",
         ),
-        click.option("-c","--column","columns",multiple=True)
+        click.option("-c", "--column", "columns", multiple=True),
     ]
     for deco in arr[::-1]:
         f = deco(f)
     return f
 
 
-def format_df(df: pd.DataFrame, out_format: str, formatters: dict = {}) -> str:
+def apply_click_options(
+    df: pd.DataFrame,
+    click_kwargs: dict,
+    **kwargs: dict,
+) -> str:
+    if click_kwargs["columns"]:
+        logging.warning(df.columns)
+        df = df[list(click_kwargs["columns"])]
+    return format_df(df, click_kwargs["out_format"], **kwargs)
+
+
+def format_df(
+    df: pd.DataFrame, out_format: str, formatters: dict = {}, **kwargs: dict
+) -> str:
     formatters = {**_DEFAULT_FORMATTERS, **formatters}
     if out_format == "plain":
         s = str(df)
