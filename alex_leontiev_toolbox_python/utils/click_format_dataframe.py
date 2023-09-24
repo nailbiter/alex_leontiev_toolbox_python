@@ -22,6 +22,7 @@ import operator
 from alex_leontiev_toolbox_python.utils import get_random_fn
 import click
 import logging
+import typing
 
 AVAILABLE_OUT_FORMATS = ["str", "csv", "json", "html", "plain", "csvfn"]
 
@@ -30,19 +31,30 @@ _DEFAULT_FORMATTERS = {
 }
 
 
-def build_click_options(f):
-    arr = [
-        click.option(
-            "-o",
-            "--out-format",
-            type=click.Choice(AVAILABLE_OUT_FORMATS),
-            default="plain",
-        ),
-        click.option("-c", "--column", "columns", multiple=True),
-    ]
-    for deco in arr[::-1]:
+def apply_clicks(
+    f: typing.Callable, *options: list, option_factory: typing.Optional[str] = None
+) -> typing.Callable:
+    for option in options[::-1]:
+        if option_factory is None:
+            deco = option
+        else:
+            deco = option_factory(*option.get("args", []), **option.get("kwargs", {}))
         f = deco(f)
     return f
+
+
+def build_click_options(
+    f: typing.Callable, option_factory=click.option
+) -> typing.Callable:
+    return apply_clicks(
+        f,
+        dict(
+            args=["-o", "--out-format"],
+            kwargs=dict(type=click.Choice(AVAILABLE_OUT_FORMATS), default="plain"),
+        ),
+        dict(args=["-c", "--column", "columns"], kwargs=dict(multiple=True)),
+        option_factory=option_factory,
+    )
 
 
 def apply_click_options(

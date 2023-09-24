@@ -31,6 +31,7 @@ from os import path
 import sqlite3
 import uuid
 
+
 def string_to_hash(s, algo="md5"):
     assert algo in ["md5", "sha256"]
     return getattr(hashlib, algo)(s.encode()).hexdigest()
