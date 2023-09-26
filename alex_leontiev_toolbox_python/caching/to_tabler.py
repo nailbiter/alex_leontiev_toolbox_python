@@ -96,8 +96,7 @@ class ToTabler:
         self._post_call_callbacks = post_call_callbacks
         self._logger = logging.getLogger(self.__class__.__name__)
 
-        if assume_sync:
-            self._recompute_tables_cache()
+        self._recompute_tables_cache()
 
     def _recompute_tables_cache(self):
         if self._assume_sync:

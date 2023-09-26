@@ -277,3 +277,22 @@ def get_random_fn(
 ):
     assert ext.startswith("."), ext
     return path.join(tmp_dir, f"{uuid.uuid4()}{ext}")
+
+
+def melt_single_record_df(
+    df: pd.DataFrame,
+    fields_to_preserve: list = [],
+    column_names: (str, str) = ("key", "val"),
+) -> pd.DataFrame:
+    assert len(df) == 1
+    (r,) = df.to_dict(orient="records")
+    df = pd.DataFrame(
+        [
+            dict(zip(column_names, t))
+            for t in r.items()
+            if t[0] not in fields_to_preserve
+        ]
+    )
+    for k in fields_to_preserve:
+        df[k] = r[k]
+    return df

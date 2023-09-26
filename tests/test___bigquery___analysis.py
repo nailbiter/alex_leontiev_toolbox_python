@@ -39,17 +39,22 @@ def test_field_coverage_stats():
     location = "US"
     bq_client = bigquery.Client(location=location)
     to_table = alex_leontiev_toolbox_python.caching.to_tabler.ToTabler(
-        bq_client=bq_client, **_TO_TABLER_KWARGS)
-    fetch = alex_leontiev_toolbox_python.caching.fetcher.Fetcher(
-        bq_client=bq_client)
-    field_coverage_stats = functools.partial(alex_leontiev_toolbox_python.bigquery.analysis.field_coverage_stats,
-                                             to_table=to_table, fetch=fetch, is_return_debug_info=True)
+        bq_client=bq_client, **_TO_TABLER_KWARGS
+    )
+    fetch = alex_leontiev_toolbox_python.caching.fetcher.Fetcher(bq_client=bq_client)
+    field_coverage_stats = functools.partial(
+        alex_leontiev_toolbox_python.bigquery.analysis.field_coverage_stats,
+        to_table=to_table,
+        fetch=fetch,
+        is_return_debug_info=True,
+    )
 
-    df1 = pd.DataFrame(np.random.randn(10, 10),
-                       columns=list(string.ascii_lowercase)[:10])
+    df1 = pd.DataFrame(
+        np.random.randn(10, 10), columns=list(string.ascii_lowercase)[:10]
+    )
     df2 = df1.copy()
-    df1["i"] = ["x"]*5+["y"]*5
-    df2["i"] = ["a"]*5+["b"]*5
+    df1["i"] = ["x"] * 5 + ["y"] * 5
+    df2["i"] = ["a"] * 5 + ["b"] * 5
     df3 = pd.concat([df1, df2])
 
     tables = set()
@@ -80,10 +85,11 @@ def test_schema_to_df():
     bq_client = bigquery.Client()
     TN = "bigquery-public-data.usa_names.usa_1910_2013"
     res = alex_leontiev_toolbox_python.bigquery.analysis.schema_to_df(
-        TN, is_table_name_input=True, is_return_comparable_object=True)
-#    logging.warning(res)
-#    with open("/tmp/e2b43790_f8c1_4ce3_859a_00b167d768de.txt", "w") as f:
-#        f.write(res)
+        TN, is_table_name_input=True, is_return_comparable_object=True
+    )
+    #    logging.warning(res)
+    #    with open("/tmp/e2b43790_f8c1_4ce3_859a_00b167d768de.txt", "w") as f:
+    #        f.write(res)
     _RES = """name     type      mode                        description
 0   state   STRING  NULLABLE                 2-digit state code
 1  gender   STRING  NULLABLE           Sex (M=male or F=female)
@@ -97,12 +103,13 @@ def test_is_fields_dependent():
     location = "US"
     bq_client = bigquery.Client(location=location)
     to_table = alex_leontiev_toolbox_python.caching.to_tabler.ToTabler(
-        bq_client=bq_client, **_TO_TABLER_KWARGS)
-    fetch = alex_leontiev_toolbox_python.caching.fetcher.Fetcher(
-        bq_client=bq_client)
+        bq_client=bq_client, **_TO_TABLER_KWARGS
+    )
+    fetch = alex_leontiev_toolbox_python.caching.fetcher.Fetcher(bq_client=bq_client)
 
-    df = pd.DataFrame(np.random.randn(10, 10),
-                      columns=list(string.ascii_lowercase)[:10])
+    df = pd.DataFrame(
+        np.random.randn(10, 10), columns=list(string.ascii_lowercase)[:10]
+    )
     df["x"] = 1
     df["y"] = df["x"] + 1
 
@@ -112,15 +119,19 @@ def test_is_fields_dependent():
         tn = to_table.upload_df(df)
         tables.add(tn)
         assert alex_leontiev_toolbox_python.bigquery.table_exists(
-            tn, bq_client=bq_client)
+            tn, bq_client=bq_client
+        )
         res, d = alex_leontiev_toolbox_python.bigquery.analysis.is_superkey(
-            tn, ["a"], to_table=to_table, fetch=fetch, is_return_debug_info=True)
+            tn, ["a"], to_table=to_table, fetch=fetch, is_return_debug_info=True
+        )
         assert res, d
         res, d = alex_leontiev_toolbox_python.bigquery.analysis.is_fields_are_dependent(
-            tn, ["x"], ["a"], to_table=to_table, fetch=fetch, is_return_debug_info=True)
+            tn, ["x"], ["a"], to_table=to_table, fetch=fetch, is_return_debug_info=True
+        )
         assert not res, json.dumps(d)
         res, d = alex_leontiev_toolbox_python.bigquery.analysis.is_fields_are_dependent(
-            tn, ["x"], ["y"], to_table=to_table, fetch=fetch, is_return_debug_info=True)
+            tn, ["x"], ["y"], to_table=to_table, fetch=fetch, is_return_debug_info=True
+        )
         assert res, json.dumps(d)
     finally:
         for tn in tables:
@@ -131,14 +142,19 @@ def test_is_superkey():
     location = "US"
     bq_client = bigquery.Client(location=location)
     to_table = alex_leontiev_toolbox_python.caching.to_tabler.ToTabler(
-        bq_client=bq_client, **_TO_TABLER_KWARGS)
-    fetch = alex_leontiev_toolbox_python.caching.fetcher.Fetcher(
-        bq_client=bq_client)
-    is_superkey = functools.partial(alex_leontiev_toolbox_python.bigquery.analysis.is_superkey,
-                                    to_table=to_table, fetch=fetch, is_return_debug_info=True)
+        bq_client=bq_client, **_TO_TABLER_KWARGS
+    )
+    fetch = alex_leontiev_toolbox_python.caching.fetcher.Fetcher(bq_client=bq_client)
+    is_superkey = functools.partial(
+        alex_leontiev_toolbox_python.bigquery.analysis.is_superkey,
+        to_table=to_table,
+        fetch=fetch,
+        is_return_debug_info=True,
+    )
 
-    df = pd.DataFrame(np.random.randn(10, 10),
-                      columns=list(string.ascii_lowercase)[:10])
+    df = pd.DataFrame(
+        np.random.randn(10, 10), columns=list(string.ascii_lowercase)[:10]
+    )
     df["x"] = 1
     df["i"] = np.arange(len(df))
 
@@ -162,14 +178,19 @@ def test_is_tables_equal():
     location = "US"
     bq_client = bigquery.Client(location=location)
     to_table = alex_leontiev_toolbox_python.caching.to_tabler.ToTabler(
-        bq_client=bq_client, **_TO_TABLER_KWARGS)
-    fetch = alex_leontiev_toolbox_python.caching.fetcher.Fetcher(
-        bq_client=bq_client)
-    is_tables_equal = functools.partial(alex_leontiev_toolbox_python.bigquery.analysis.is_tables_equal,
-                                        to_table=to_table, fetch=fetch, is_return_debug_info=True)
+        bq_client=bq_client, **_TO_TABLER_KWARGS
+    )
+    fetch = alex_leontiev_toolbox_python.caching.fetcher.Fetcher(bq_client=bq_client)
+    is_tables_equal = functools.partial(
+        alex_leontiev_toolbox_python.bigquery.analysis.is_tables_equal,
+        to_table=to_table,
+        fetch=fetch,
+        is_return_debug_info=True,
+    )
 
-    df = pd.DataFrame(np.random.randn(10, 10),
-                      columns=list(string.ascii_lowercase)[:10])
+    df = pd.DataFrame(
+        np.random.randn(10, 10), columns=list(string.ascii_lowercase)[:10]
+    )
     df["i"] = np.arange(len(df))
     df_shuffled = df.sample(frac=1.0)
     assert len(df) == len(df_shuffled)
@@ -193,12 +214,37 @@ def test_is_tables_equal():
         res, d = is_tables_equal(tn, tn2, ["i"])
         assert not res, d
 
-#        assert False, d
+    #        assert False, d
     except Exception:
         with open("/tmp/E33F2262-AE5B-4489-8B57-F9876D57FD1B.log.json", "w") as f:
-            json.dump({k: v for k, v in d.items()
-                      if k not in "diff_sql_f".split()}, f)
+            json.dump({k: v for k, v in d.items() if k not in "diff_sql_f".split()}, f)
         raise
     finally:
         for tn in tables:
             bq_client.delete_table(tn, not_found_ok=True)
+
+
+def test_check_nullness():
+    location = "US"
+    bq_client = bigquery.Client(location=location)
+    to_table = alex_leontiev_toolbox_python.caching.to_tabler.ToTabler(
+        bq_client=bq_client, **_TO_TABLER_KWARGS
+    )
+    fetch = alex_leontiev_toolbox_python.caching.fetcher.Fetcher(bq_client=bq_client)
+    check_nonullness = functools.partial(
+        alex_leontiev_toolbox_python.bigquery.analysis.check_nonullness,
+        to_table=to_table,
+        fetch=fetch,
+        is_return_debug_info=True,
+    )
+
+    columns = list(string.ascii_lowercase)[:10]
+    df = pd.DataFrame(np.random.randn(10, 10), columns=columns)
+
+    tn = to_table.upload_df(df)
+    res, d = check_nonullness(tn, columns)
+    assert res
+
+    tn2 = to_table(f"select *,null as x from `{tn}`")
+    res, d = check_nonullness(tn2, ["x"])
+    assert not res
