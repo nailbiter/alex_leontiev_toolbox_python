@@ -26,6 +26,7 @@ from alex_leontiev_toolbox_python.caching.to_tabler import ToTabler
 import inspect
 import types
 from typing import cast
+import typing
 import logging
 import functools
 
@@ -35,9 +36,9 @@ _DEFAULT_TABLE_ALIASES = ("tn1", "tn2")
 def schema_to_df(
     table_or_table_name,
     bq_client=None,
-    is_return_comparable_object=False,
-    is_table_name_input=False,
-):
+    is_return_comparable_object: bool = False,
+    is_table_name_input: bool = False,
+) -> typing.Union[str, pd.DataFrame]:
     if (bq_client is None) and is_table_name_input:
         bq_client = bigquery.Client()
     table = (
@@ -382,12 +383,30 @@ def bq_describe(
     pass
 
 
-DEFAULT_IMPUTATION_VALUES = {
-    "string": "***IFNULL***",
+DEFAULT_IMPUTATION_VALUES_PER_TYPE = {
+    ## https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types
+    "ARRAY": "[]",
+    "BIGNUMERIC": -1,
+    "BOOL": "FALSE",
+    # "BYTES": ,
+    "DATE": "datetime(9999,12,24)",
+    "DATETIME": "datetime(9999,12,24)",
+    "FLOAT64": -1,
+    "FLOAT": -1,
+    # "GEOGRAPHY": ,
+    "INT64": -1,
+    "INTEGER": -1,
+    # "INTERVAL": ,
+    # "JSON": ,
+    "NUMERIC": -1,
+    "STRING": "***IFNULL***",
+    # "STRUCT": ,
+    # "TIME": ,
+    # "TIMESTAMP": ,
 }
 
 
-def check_nonullness(
+def is_nonull(
     table_name: str,
     fields: list[str],
     fetch=None,
@@ -395,14 +414,17 @@ def check_nonullness(
     is_return_debug_info: bool = False,
     cnt_name: str = "cnt",
     is_generate_imputed_table: bool = False,
-    imputation_values: dict = DEFAULT_IMPUTATION_VALUES,
-):
+    imputation_values_per_type: dict = DEFAULT_IMPUTATION_VALUES_PER_TYPE,
+) -> typing.Union[bool, typing.Tuple[bool, dict]]:
     """
     FIXME: enable `is_generate_imputed_table`
     """
-    assert not is_generate_imputed_table
-
     assert cnt_name not in fields, (cnt_name, fields)
+    jinja_env = dict(
+        table_name=table_name,
+        cnt_name=cnt_name,
+        fields=fields,
+    )
     d = {
         "sql": Template(
             """
@@ -413,11 +435,41 @@ def check_nonullness(
                     count(1) {{cnt_name}},
                 from `{{table_name}}`
                 """
-        ).render(dict(table_name=table_name, cnt_name=cnt_name, fields=fields))
+        ).render(jinja_env)
     }
     df = fetch(to_table(d["sql"]))
     df = melt_single_record_df(
         df, fields_to_preserve=[cnt_name], column_names=("column_name", "null_perc")
     )
+    d["df"] = df
+
+    if is_generate_imputed_table:
+        _schema_to_df = functools.partial(
+            schema_to_df, bq_client=to_table.client, is_table_name_input=True
+        )
+        schema_df = _schema_to_df(table_name)
+        imputation_values = {
+            field_name: imputation_values_per_type[type_]
+            for field_name, type_ in schema_df[["name", "type"]].values
+            if field_name in fields
+        }
+        d["imputation_values"] = imputation_values
+        d["imputed_table_name"] = to_table(
+            Template(
+                """
+                select
+                {% for cn in column_names %}
+                  {% if cn in fields %}
+                    ifnull({{ cn }}, {{ imputation_values[cn] }}) {{ cn }},
+                  {% else %}
+                    {{ cn }},
+                  {% endif %}
+                {% endfor %}
+                from `{{ table_name }}`
+                """
+            ).render({**jinja_env, **d, "column_names": schema_df["name"].to_list()})
+        )
+        # raise NotImplementedError()
+
     res = (df["null_perc"] == 0).all()
     return (res, d) if is_return_debug_info else res

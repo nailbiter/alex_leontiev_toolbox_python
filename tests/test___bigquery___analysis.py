@@ -217,7 +217,7 @@ def test_is_tables_equal():
     #        assert False, d
     except Exception:
         with open("/tmp/E33F2262-AE5B-4489-8B57-F9876D57FD1B.log.json", "w") as f:
-            json.dump({k: v for k, v in d.items() if k not in "diff_sql_f".split()}, f)
+            json.dump({k: v for k, v in d.items() if k not in {"diff_sql_f"}}, f)
         raise
     finally:
         for tn in tables:
@@ -231,20 +231,36 @@ def test_check_nullness():
         bq_client=bq_client, **_TO_TABLER_KWARGS
     )
     fetch = alex_leontiev_toolbox_python.caching.fetcher.Fetcher(bq_client=bq_client)
-    check_nonullness = functools.partial(
-        alex_leontiev_toolbox_python.bigquery.analysis.check_nonullness,
+    is_nonull = functools.partial(
+        alex_leontiev_toolbox_python.bigquery.analysis.is_nonull,
         to_table=to_table,
         fetch=fetch,
         is_return_debug_info=True,
+        is_generate_imputed_table=True,
     )
 
-    columns = list(string.ascii_lowercase)[:10]
-    df = pd.DataFrame(np.random.randn(10, 10), columns=columns)
+    tables = set()
+    d = {}
+    try:
+        columns = list(string.ascii_lowercase)[:10]
+        df = pd.DataFrame(np.random.randn(10, 10), columns=columns)
 
-    tn = to_table.upload_df(df)
-    res, d = check_nonullness(tn, columns)
-    assert res
+        tn = to_table.upload_df(df)
+        tables.add(tn)
+        res, d = is_nonull(tn, columns)
+        assert res
 
-    tn2 = to_table(f"select *,null as x from `{tn}`")
-    res, d = check_nonullness(tn2, ["x"])
-    assert not res
+        tn2 = to_table(f"select *,null as x from `{tn}`")
+        tables.add(tn2)
+        res, d = is_nonull(tn2, ["x"])
+        assert not res
+    except Exception:
+        with open("/tmp/840F6A70-8C34-4553-914F-5C2748361868.log.json", "w") as f:
+            json.dump(
+                {k: v for k, v in d.items() if k not in {"df"}},
+                f,
+            )
+        raise
+    finally:
+        for tn in tables:
+            bq_client.delete_table(tn, not_found_ok=True)
