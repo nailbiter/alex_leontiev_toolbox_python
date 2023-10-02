@@ -18,11 +18,13 @@ ORGANIZATION:
 
 ==============================================================================="""
 import pandas as pd
+import numpy as np
 import operator
 from alex_leontiev_toolbox_python.utils import get_random_fn
 import click
 import logging
 import typing
+
 
 AVAILABLE_OUT_FORMATS = ["str", "csv", "json", "html", "plain", "csvfn"]
 
@@ -53,6 +55,10 @@ def build_click_options(
             kwargs=dict(type=click.Choice(AVAILABLE_OUT_FORMATS), default="plain"),
         ),
         dict(args=["-c", "--column", "columns"], kwargs=dict(multiple=True)),
+        dict(
+            args=["-S", "--sort"],
+            kwargs=dict(multiple=True, type=(str, click.Choice(["asc", "desc"]))),
+        ),
         option_factory=option_factory,
     )
 
@@ -65,6 +71,14 @@ def apply_click_options(
     if click_kwargs["columns"]:
         logging.warning(df.columns)
         df = df[list(click_kwargs["columns"])]
+    if click_kwargs["sort"]:
+        sort = click_kwargs["sort"]
+        sort_dict = dict(
+            by=list(map(operator.itemgetter(0), sort)),
+            ascending=np.array(map(operator.itemgetter(1), sort)) == "asc",
+        )
+        logging.warning((sort, sort_dict))
+        df = df.sort_values(**sort_values, inplace=True)
     return format_df(df, click_kwargs["out_format"], **kwargs)
 
 
