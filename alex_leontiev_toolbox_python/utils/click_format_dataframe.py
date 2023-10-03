@@ -45,18 +45,24 @@ def apply_clicks(
     return f
 
 
+_CMDLINE_PREFIX = "click-format-dataframe"
+
+
 def build_click_options(
     f: typing.Callable, option_factory=click.option
 ) -> typing.Callable:
     return apply_clicks(
         f,
         dict(
-            args=["-o", "--out-format"],
+            args=["-o", f"--{_CMDLINE_PREFIX}-out-format", "out_format"],
             kwargs=dict(type=click.Choice(AVAILABLE_OUT_FORMATS), default="plain"),
         ),
-        dict(args=["-c", "--column", "columns"], kwargs=dict(multiple=True)),
         dict(
-            args=["-S", "--sort"],
+            args=["-c", f"--{_CMDLINE_PREFIX}-column", "columns"],
+            kwargs=dict(multiple=True),
+        ),
+        dict(
+            args=["-S", f"--{_CMDLINE_PREFIX}--sort", "sort"],
             kwargs=dict(multiple=True, type=(str, click.Choice(["asc", "desc"]))),
         ),
         option_factory=option_factory,
