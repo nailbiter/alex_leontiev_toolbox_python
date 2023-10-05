@@ -414,12 +414,18 @@ def is_nonull(
     is_return_debug_info: bool = False,
     cnt_name: str = "cnt",
     is_generate_imputed_table: bool = False,
-    imputation_values_per_type: dict = DEFAULT_IMPUTATION_VALUES_PER_TYPE,
+    imputation_values_per_type: dict = {},
 ) -> typing.Union[bool, typing.Tuple[bool, dict]]:
     """
     FIXME: enable `is_generate_imputed_table`
     """
     assert cnt_name not in fields, (cnt_name, fields)
+
+    imputation_values_per_type = {
+        **DEFAULT_IMPUTATION_VALUES_PER_TYPE,
+        **imputation_values_per_type,
+    }
+
     jinja_env = dict(
         table_name=table_name,
         cnt_name=cnt_name,
