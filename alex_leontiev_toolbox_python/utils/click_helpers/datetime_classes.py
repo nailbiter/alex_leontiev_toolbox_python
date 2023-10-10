@@ -38,13 +38,15 @@ class SimpleCliDatetimeParamType(click.ParamType):
     def __init__(
         self,
         ## https://click.palletsprojects.com/en/7.x/parameters/#parameter-types
-        formats=["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"],
-        now=None,
+        formats: list[str] = ["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"],
+        now: datetime = None,
+        is_debug: bool = False,
     ):
         super().__init__()
         self._formats = formats
         self._now = datetime.now() if now is None else now
         self._logger = logging.getLogger(self.__class__.__name__)
+        self._is_debug = is_debug
 
     def convert(self, value, param, ctx):
         try:
@@ -60,8 +62,10 @@ class SimpleCliDatetimeParamType(click.ParamType):
                         )
                     return res
                 except ValueError as ve:
-                    self_._logger.info(ve)
-                    pass
+                    if self._is_debug:
+                        self_._logger.error(ve)
+            if is_debug:
+                self._logger.error("here")
             raise Exception(dict(value=value, formats=self._formats))
         except Exception as e:
             self.fail(str(dict(value=value, formats=self._formats)), param, ctx)
