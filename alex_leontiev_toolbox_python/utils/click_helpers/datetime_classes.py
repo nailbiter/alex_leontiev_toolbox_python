@@ -43,16 +43,21 @@ class SimpleCliDatetimeParamType(click.ParamType):
         self._now = datetime.now() if now is None else now
 
     def convert(self, value, param, ctx):
-        ##
-        for fmt in self._formats:
-            try:
-                res = datetime.strptime(value, fmt)
-                if fmt in _SHORT_DT_TYPES_SET:
-                    res = res.replace(
-                        **{k: geattr(self._now, k) for k in ["year", "month", "day"]}
-                    )
-                return res
-            except ValueError as ve:
-                pass
-        # fail_callback = lambda msg: self.fail(msg, param, ctx)
-        self.fail(str(dict(value=value, formats=self._formats)), param, ctx)
+        try:
+            for fmt in self._formats:
+                try:
+                    res = datetime.strptime(value, fmt)
+                    if fmt in _SHORT_DT_TYPES_SET:
+                        res = res.replace(
+                            **{
+                                k: geattr(self._now, k)
+                                for k in ["year", "month", "day"]
+                            }
+                        )
+                    return res
+                except ValueError as ve:
+                    pass
+            raise Exception(dict(value=value, formats=self._formats))
+        except Exception as e:
+            self.fail(str(dict(value=value, formats=self._formats)), param, ctx)
+            # raise e
