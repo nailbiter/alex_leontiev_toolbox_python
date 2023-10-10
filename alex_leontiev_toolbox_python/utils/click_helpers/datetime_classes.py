@@ -34,11 +34,13 @@ class SimpleCliDatetimeParamType(click.ParamType):
 
     name = "convenient_cli_datetime"
 
-    def __init__(self, *formats, now=None):
+    def __init__(
+        self,
+        ## https://click.palletsprojects.com/en/7.x/parameters/#parameter-types
+        formats=["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"],
+        now=None,
+    ):
         super().__init__()
-        if len(formats) == 0:
-            ## https://click.palletsprojects.com/en/7.x/parameters/#parameter-types
-            formats = ["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"]
         self._formats = formats
         self._now = datetime.now() if now is None else now
 
