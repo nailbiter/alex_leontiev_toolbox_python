@@ -19,6 +19,7 @@ ORGANIZATION:
 ==============================================================================="""
 import click
 from datetime import datetime, timedelta
+import logging
 
 _SHORT_DT_TYPES_SET = {
     "%H:%M",
@@ -43,6 +44,7 @@ class SimpleCliDatetimeParamType(click.ParamType):
         super().__init__()
         self._formats = formats
         self._now = datetime.now() if now is None else now
+        self._logger = logging.getLogger(self.__class__.__name__)
 
     def convert(self, value, param, ctx):
         try:
@@ -58,6 +60,7 @@ class SimpleCliDatetimeParamType(click.ParamType):
                         )
                     return res
                 except ValueError as ve:
+                    self_._logger.info(ve)
                     pass
             raise Exception(dict(value=value, formats=self._formats))
         except Exception as e:
