@@ -63,7 +63,7 @@ class SimpleCliDatetimeParamType(click.ParamType):
                     return res
                 except ValueError as ve:
                     if self._is_debug:
-                        self_._logger.error(ve)
+                        self._logger.error(ve)
             if self._is_debug:
                 self._logger.error("here")
             raise Exception(dict(value=value, formats=self._formats))
