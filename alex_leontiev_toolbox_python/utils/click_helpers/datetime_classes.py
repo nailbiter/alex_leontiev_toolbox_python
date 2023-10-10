@@ -20,6 +20,7 @@ ORGANIZATION:
 import click
 from datetime import datetime, timedelta
 import logging
+import pandas as pd
 
 _SHORT_DT_TYPES_SET = {
     "%H:%M",
@@ -52,7 +53,10 @@ class SimpleCliDatetimeParamType(click.ParamType):
         try:
             for fmt in self._formats:
                 try:
-                    res = datetime.strptime(value, fmt)
+                    if fmt == "pandas_to_datetime":
+                        res = pd.to_datetime(value)
+                    else:
+                        res = datetime.strptime(value, fmt)
                     if fmt in _SHORT_DT_TYPES_SET:
                         res = res.replace(
                             **{
