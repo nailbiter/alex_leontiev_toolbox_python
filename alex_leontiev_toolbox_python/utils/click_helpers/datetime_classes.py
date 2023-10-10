@@ -56,7 +56,7 @@ class SimpleCliDatetimeParamType(click.ParamType):
                     if fmt in _SHORT_DT_TYPES_SET:
                         res = res.replace(
                             **{
-                                k: geattr(self._now, k)
+                                k: getattr(self._now, k)
                                 for k in ["year", "month", "day"]
                             }
                         )
