@@ -31,9 +31,10 @@ class deprecated:
         @functools.wraps(f)
         def f_(*args, **kwargs):
             logging.warning(
-                Template("{{f.__name__}} is deprecated!{{msg}}").render(
+                Template("{{name}} is deprecated!{{msg}}").render(
                     dict(name=f.__name__, msg=self._msg)
                 )
             )
+            return f(*args, **kwargs)
 
         return f_
