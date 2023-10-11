@@ -22,8 +22,8 @@ from datetime import datetime, timedelta
 import logging
 import pandas as pd
 
-_SHORT_DT_TYPES_SET = {
-    "%H:%M",
+_SHORT_DT_TYPES = {
+    "%H:%M": {"year", "month", "day"},
 }
 
 
@@ -40,10 +40,12 @@ class SimpleCliDatetimeParamType(click.ParamType):
         self,
         ## https://click.palletsprojects.com/en/7.x/parameters/#parameter-types
         formats: list[str] = ["%Y-%m-%d", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S"],
+        short_dt_types: dict[str, set[str]] = _SHORT_DT_TYPES,
         now: datetime = None,
         is_debug: bool = False,
     ):
         super().__init__()
+        self._short_dt_types = short_dt_types
         self._formats = formats
         self._now = datetime.now() if now is None else now
         self._logger = logging.getLogger(self.__class__.__name__)
@@ -57,11 +59,11 @@ class SimpleCliDatetimeParamType(click.ParamType):
                         res = pd.to_datetime(value)
                     else:
                         res = datetime.strptime(value, fmt)
-                    if fmt in _SHORT_DT_TYPES_SET:
+                    if fmt in self._short_dt_types:
                         res = res.replace(
                             **{
                                 k: getattr(self._now, k)
-                                for k in ["year", "month", "day"]
+                                for k in self._short_dt_types[fmt]
                             }
                         )
                     return res
