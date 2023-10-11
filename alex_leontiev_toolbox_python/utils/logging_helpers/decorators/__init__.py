@@ -25,7 +25,7 @@ from jinja2 import Template
 
 class deprecated:
     def __init__(self, msg: str = None):
-        self._msg = None
+        self._msg = msg
 
     def __call__(self, f):
         @functools.wraps(f)
