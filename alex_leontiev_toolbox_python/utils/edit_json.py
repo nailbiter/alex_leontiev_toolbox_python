@@ -20,6 +20,7 @@ ORGANIZATION:
 import json
 import copy
 import typing
+import functools
 
 
 def _recursive_set(d: dict, keys: list, val) -> dict:
@@ -34,11 +35,20 @@ def _recursive_set(d: dict, keys: list, val) -> dict:
         return _recursive_set(d[key], _keys, val)
 
 
-def edit_json(src: dict, patch: dict = {}) -> dict:
-    config = patch.get("c", {})
-    if config.get("is_copy", False):
-        src = copy.deepcopy(src)
-    operations = patch.get("ops", [])
+@functools.singledispatch
+def _apply_operations(operations, src: dict, config: dict):
+    raise NotImplementedError()
+
+
+@_apply_operations.register
+def _(operations: dict, src: dict, config: dict):
+    return _apply_operations(
+        [dict(k=k, v=v) for k, v in operations.items()], src, config
+    )
+
+
+@_apply_operations.register
+def _(operations: list, src: dict, config: dict):
     for operation in operations:
         key = operation["k"]
         val = operation.get("v")
@@ -53,3 +63,11 @@ def edit_json(src: dict, patch: dict = {}) -> dict:
         else:
             raise NotImplementedError(dict(operation=operation))
     return src
+
+
+def edit_json(src: dict, patch: dict = {}) -> dict:
+    config = patch.get("c", {})
+    if config.get("is_copy", False):
+        src = copy.deepcopy(src)
+    operations = patch.get("ops", [])
+    return _apply_operations(operations, src, config)

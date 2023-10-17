@@ -21,9 +21,15 @@ import logging
 from alex_leontiev_toolbox_python.utils.edit_json import edit_json
 
 
-def test_edit_json():
+def test_edit_json_1():
     d = {"a": {"b": 1}}
     d = edit_json(d, dict(c=dict(sep="."), ops=[dict(k="$set", v={"a.b": 2})]))
+    assert d == {"a": {"b": 2}}
+
+
+def test_edit_json_2():
+    d = {"a": {"b": 1}}
+    d = edit_json(d, dict(c=dict(sep="."), ops={"$set": {"a.b": 2}}))
     assert d == {"a": {"b": 2}}
 
 
