@@ -84,7 +84,7 @@ def apply_click_options(
 ) -> str:
     if click_kwargs["columns"]:
         logging.warning(df.columns)
-        df = df[list(click_kwargs["columns"])]
+        df = df[list(click_kwargs["columns"])].copy()
     if click_kwargs["sort"]:
         sort = click_kwargs["sort"]
         sort_dict = dict(
