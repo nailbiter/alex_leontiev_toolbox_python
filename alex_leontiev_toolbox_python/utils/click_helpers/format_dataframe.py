@@ -92,7 +92,7 @@ def apply_click_options(
             ascending=np.array(map(operator.itemgetter(1), sort)) == "asc",
         )
         logging.warning((sort, sort_dict))
-        df = df.sort_values(**sort_values, inplace=True)
+        df = df.sort_values(**sort_dict, inplace=True)
     return format_df(df, click_kwargs["out_format"], **kwargs)
 
 
