@@ -89,7 +89,7 @@ def apply_click_options(
         sort = click_kwargs["sort"]
         sort_dict = dict(
             by=list(map(operator.itemgetter(0), sort)),
-            ascending=np.array(map(operator.itemgetter(1), sort)) == "asc",
+            ascending=[b == "asc" for _, b in sort],
         )
         logging.warning((sort, sort_dict))
         df.sort_values(**sort_dict, inplace=True)
