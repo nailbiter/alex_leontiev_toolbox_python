@@ -80,11 +80,11 @@ class AsyncBatch:
                 job.start()
                 self._running_jobs_idxs.add(i)
 
-    @attribute
+    @property
     def is_running(self) -> bool:
         return len(self._job_results) < len(self._async_jobs)
 
-    @attribute
+    @property
     def results(self) -> list:
         assert len(self._job_results) == len(self._async_jobs)
         return [self._job_results[i] for i in sorted(list(self._job_results))]
