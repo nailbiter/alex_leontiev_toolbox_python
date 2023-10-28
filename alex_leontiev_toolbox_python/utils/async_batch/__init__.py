@@ -69,7 +69,7 @@ class AsyncBatch:
         )
         scheduled = 0
         for i, job in enumerate(self._async_jobs):
-            if scheduled >= remaining_capacity:
+            if (remaining_capacity is not None) and (scheduled >= remaining_capacity):
                 break
             if (
                 (i not in self._running_jobs_idxs)
