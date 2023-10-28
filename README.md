@@ -15,6 +15,10 @@ poetry run pytest tests/test___caching.py
 
 ## theory
 
+### 
+
+`IIV` = Input Imputation Validation
+
 ### "opaque" vs "transparent" wrappers
 
 I call a class `WA` a *wrapper* for class `A`, when:
