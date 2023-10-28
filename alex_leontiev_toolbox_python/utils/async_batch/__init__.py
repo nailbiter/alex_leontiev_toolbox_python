@@ -81,6 +81,10 @@ class AsyncBatch:
                 self._running_jobs_idxs.add(i)
 
     @property
+    def progress(self) -> typing.Tuple[int, int]:
+        return len(self._job_results), len(self._async_jobs)
+
+    @property
     def is_running(self) -> bool:
         return len(self._job_results) < len(self._async_jobs)
 
