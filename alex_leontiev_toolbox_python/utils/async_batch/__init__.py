@@ -55,10 +55,7 @@ class AsyncBatch:
                 return False
         return True
 
-    def rotate(self) -> bool:
-        """
-        @return: bool -- is_running
-        """
+    def rotate(self):
         for i in list(self._running_jobs_idxs):
             job = self._async_jobs[i]
             if not job.is_running():
@@ -82,6 +79,9 @@ class AsyncBatch:
                 scheduled += 1
                 job.start()
                 self._running_jobs_idxs.add(i)
+
+    @attribute
+    def is_running(self) -> bool:
         return len(self._job_results) < len(self._async_jobs)
 
     @attribute
