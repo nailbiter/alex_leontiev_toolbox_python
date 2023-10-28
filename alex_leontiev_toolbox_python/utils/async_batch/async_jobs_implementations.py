@@ -20,6 +20,26 @@ ORGANIZATION:
 
 from alex_leontiev_toolbox_python.utils.async_batch import AsyncJob
 from datetime import datetime, timedelta
+from google.cloud import bigquery
+
+
+class BigQueryQueryJob(AsyncJob):
+    def __init__(self, query: str, bq_client=None, query_kwargs: dict = {}):
+        self._query = query
+        self._bq_client = bigquery.Client() if bq_client is None else bq_client
+        self._query_kwargs = query_kwargs
+
+    def start(self):
+        self._job = self._bq_client.query(self._query, **self._query_kwargs)
+
+    def is_running(self):
+        """
+        https://cloud.google.com/python/docs/reference/bigquery/latest/index.html#google.cloud.bigquery.job.QueryJob.destination
+        """
+        return self._job.running
+
+    def get_result(self):
+        return self._job
 
 
 class SleepJob(AsyncJob):
