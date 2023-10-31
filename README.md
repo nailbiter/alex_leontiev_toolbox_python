@@ -15,9 +15,9 @@ poetry run pytest tests/test___caching.py
 
 ## theory
 
-### 
+### `papermill`
 
-`IIV` = Input Imputation Validation
+`(O)DIV` = (Override) Defaults; Imputation; Validation
 
 ### "opaque" vs "transparent" wrappers
 
