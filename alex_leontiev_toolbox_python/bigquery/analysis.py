@@ -34,8 +34,8 @@ _DEFAULT_TABLE_ALIASES = ("tn1", "tn2")
 
 
 def schema_to_df(
-    table_or_table_name,
-    bq_client=None,
+    table_or_table_name: typing.Union[str, bigquery.Table],
+    bq_client: typing.Optional[bigquery.Client] = None,
     is_return_comparable_object: bool = False,
     is_table_name_input: bool = False,
 ) -> typing.Union[str, pd.DataFrame]:
