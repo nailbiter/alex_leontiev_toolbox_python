@@ -16,6 +16,11 @@ ORGANIZATION:
      CREATED: 2023-10-10T19:03:22.450648
     REVISION: ---
 
+TODO:
+  1. unify "date" and "datetime" via constructor argument
+  2. support "next mon", "today", "tomorrow" and etc.
+  3. replace in all codes (gstasks, for)
+  4. 
 ==============================================================================="""
 import click
 from datetime import datetime, timedelta
