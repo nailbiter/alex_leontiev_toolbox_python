@@ -23,6 +23,7 @@ import pandas as pd
 import click
 import re
 import logging
+from datetime import datetime, timedelta
 
 
 def _fetch_uuid(uuid, uuid_cache_db=None):
