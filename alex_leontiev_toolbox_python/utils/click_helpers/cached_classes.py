@@ -45,11 +45,12 @@ class UuidCacher:
         return conn
 
     def add(self, name: str) -> None:
-        df = pd.DataFrame([{"name": name, "datetime": datetime.now().isoformat()}])
+        now = datetime.now()
+        df = pd.DataFrame([{"name": name, "datetime": now.isoformat()}])
         conn = self._get_conn()
         df.to_sql(self._db_name, conn, if_exists="append", index=None)
         conn.close()
-        self._logger.warning(f'add "{name}" to cache')
+        self._logger.warning(f'add "{name}" to cache (at "{now.isoformat()}")')
 
     def get_all(self) -> pd.DataFrame:
         conn = self._get_conn()
