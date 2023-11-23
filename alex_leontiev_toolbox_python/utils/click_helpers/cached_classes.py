@@ -18,7 +18,7 @@ ORGANIZATION:
 
 ==============================================================================="""
 
-import sqlite
+import sqlite3
 import pandas as pd
 import click
 import re
