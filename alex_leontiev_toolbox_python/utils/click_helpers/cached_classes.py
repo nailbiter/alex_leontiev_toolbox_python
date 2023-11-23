@@ -61,7 +61,7 @@ class UuidCacher:
 
 
 def fetch_or_pass(value: str, uuid_cacher: UuidCacher) -> str:
-    if (m := re.match(r"^(-\d+)$"), value) is not None:
+    if (m := re.match(r"^(-\d+)$", value)) is not None:
         df = uuid_cacher.get_all()
         return df.iloc[int(m.group(1))]["name"]
     else:
