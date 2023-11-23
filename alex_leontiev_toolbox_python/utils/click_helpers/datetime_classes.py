@@ -26,6 +26,11 @@ import click
 from datetime import datetime, timedelta
 import logging
 import pandas as pd
+from alex_leontiev_toolbox_python.utils.click_helpers.cached_classes import (
+    UuidCacher,
+    fetch_or_pass,
+)
+import typing
 
 _SHORT_DT_TYPES = {
     "%H:%M": {"year", "month", "day"},
@@ -48,6 +53,7 @@ class SimpleCliDatetimeParamType(click.ParamType):
         short_dt_types: dict[str, set[str]] = _SHORT_DT_TYPES,
         now: datetime = None,
         is_debug: bool = False,
+        caching_settings: typing.Optional[typing.Tuple[str, str]] = None,
     ):
         super().__init__()
         self._short_dt_types = short_dt_types
@@ -55,8 +61,14 @@ class SimpleCliDatetimeParamType(click.ParamType):
         self._now = datetime.now() if now is None else now
         self._logger = logging.getLogger(self.__class__.__name__)
         self._is_debug = is_debug
+        if caching_settings is not None:
+            self._uuid_cacher = UuidCacher(*caching_settings)
+        else:
+            self._uuid_cacher = None
 
     def convert(self, value, param, ctx):
+        if self._uuid_cacher is not None:
+            value = fetch_or_pass(value, self._uuid_cacher)
         try:
             for fmt in self._formats:
                 try:
