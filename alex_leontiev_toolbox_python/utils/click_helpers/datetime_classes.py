@@ -54,11 +54,13 @@ class SimpleCliDatetimeParamType(click.ParamType):
         now: datetime = None,
         is_debug: bool = False,
         caching_settings: typing.Optional[typing.Tuple[str, str]] = None,
+        impute_none: bool = False,
     ):
         super().__init__()
         self._short_dt_types = short_dt_types
         self._formats = formats
         self._now = datetime.now() if now is None else now
+        self._impute_none = impute_none
         self._logger = logging.getLogger(self.__class__.__name__)
         self._is_debug = is_debug
         if caching_settings is not None:
@@ -67,8 +69,13 @@ class SimpleCliDatetimeParamType(click.ParamType):
             self._uuid_cacher = None
 
     def convert(self, value, param, ctx):
+        if (value is None) and self._impute_none:
+            assert "pandas_to_datetime" in self._formats, self._formats
+            value = self._now.isoformat()
+
         if self._uuid_cacher is not None:
             value = fetch_or_pass(value, self._uuid_cacher)
+
         try:
             for fmt in self._formats:
                 try:
