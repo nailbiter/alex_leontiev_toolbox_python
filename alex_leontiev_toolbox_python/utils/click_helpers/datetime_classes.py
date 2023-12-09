@@ -69,6 +69,7 @@ class SimpleCliDatetimeParamType(click.ParamType):
             self._uuid_cacher = None
 
     def convert(self, value, param, ctx):
+        logging.warning((value, param, ctx))
         if (value is None) and self._impute_none:
             assert "pandas_to_datetime" in self._formats, self._formats
             value = self._now.isoformat()
