@@ -74,7 +74,7 @@ class SimpleCliDatetimeParamType(click.ParamType):
                 value, self._uuid_cacher, add_on_fail=False
             )
             if is_fetched:
-                return datetime.fromtimestamp(value)
+                return datetime.fromisoformat(value)
 
         try:
             for fmt in self._formats:
