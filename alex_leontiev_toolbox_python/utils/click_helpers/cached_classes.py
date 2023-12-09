@@ -62,13 +62,19 @@ class UuidCacher:
         return df
 
 
-def fetch_or_pass(value: str, uuid_cacher: UuidCacher) -> str:
+def fetch_or_pass(
+    value: str, uuid_cacher: UuidCacher, add_on_fail: bool = True
+) -> (str, bool):
+    """
+    @return (res,is_fetched)
+    """
     if (m := re.match(r"^(-\d+)$", value)) is not None:
         df = uuid_cacher.get_all()
-        return df.iloc[int(m.group(1))]["name"]
+        return df.iloc[int(m.group(1))]["name"], True
     else:
-        uuid_cacher.add(value)
-        return value
+        if add_on_fail:
+            uuid_cacher.add(value)
+        return value, False
 
 
 class CachedString(click.ParamType):
@@ -79,5 +85,6 @@ class CachedString(click.ParamType):
         self._uuid_cacher = UuidCacher(cache_db_filename, table_filename)
 
     def convert(self, value, param, ctx):
-        return fetch_or_pass(value, self._uuid_cacher)
+        res, is_fetched = fetch_or_pass(value, self._uuid_cacher)
+        return res
         # self.fail(str(dict(value=value, )), param, ctx)

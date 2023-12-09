@@ -67,20 +67,29 @@ class SimpleCliDatetimeParamType(click.ParamType):
             self._uuid_cacher = None
 
     def convert(self, value, param, ctx):
-        # self._logger.warning((value, param, ctx))
+        self._logger.warning((value, param, ctx))
 
         if self._uuid_cacher is not None:
-            value = fetch_or_pass(value, self._uuid_cacher)
+            value, is_fetched = fetch_or_pass(
+                value, self._uuid_cacher, add_on_fail=False
+            )
+            if is_fetched:
+                return datetime.fromtimestamp(value)
 
         try:
             for fmt in self._formats:
+                res = None
+                is_ok = False
                 try:
                     if fmt == "pandas_to_datetime":
                         res = pd.to_datetime(value)
+                        is_ok = True
                     elif fmt == "now":
                         res = self._now
+                        is_ok = True
                     else:
                         res = datetime.strptime(value, fmt)
+                        is_ok = True
                     if fmt in self._short_dt_types:
                         res = res.replace(
                             **{
@@ -88,10 +97,14 @@ class SimpleCliDatetimeParamType(click.ParamType):
                                 for k in self._short_dt_types[fmt]
                             }
                         )
-                    return res
                 except ValueError as ve:
                     if self._is_debug:
                         self._logger.error(ve)
+
+                if is_ok:
+                    if self._uuid_cacher is not None:
+                        self._uuid_cacher.add(res.isoformat())
+                    return res
             if self._is_debug:
                 self._logger.error("here")
             raise Exception(dict(value=value, formats=self._formats))
