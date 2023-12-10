@@ -23,17 +23,25 @@ import typing
 import functools
 
 
-def _recursive_set(d: dict, keys: list, val) -> dict:
+def _recursive_apply(d: dict, keys: list, val:typing.Any, op:str,config:dict) -> dict:
     if len(keys) == 0:
         return d
     elif len(keys) == 1:
         (key,) = keys
-        d[key] = val
+        _apply(d,key, val,op,config)
         return d
     else:
         key, *_keys = keys
-        return _recursive_set(d[key], _keys, val)
+        return _recursive_set(d[key], _keys, val,op,config)
 
+def _apply(d:dict,key:str,val:typing.Any,op:str,config:dict)->None:
+        if op=='$set':
+            d[key] = val
+        elif op=='$add':
+            l = list(d[key])
+            d[key] = l + [x for x in val if (x not in l) or (not config.get('only_new',False))]
+        else:
+            raise NotImplementedError(dict(op=op))
 
 @functools.singledispatch
 def _apply_operations(operations, src: dict, config: dict):
@@ -52,20 +60,25 @@ def _(operations: list, src: dict, config: dict):
     for operation in operations:
         key = operation["k"]
         val = operation.get("v")
+        _config = {**config,**operation.get('c',{})}
 
-        if key == "$set":
-            sep = config.get("sep")
+        if key in ["$set","$add"]:
+            sep = _config.get("sep")
             for k, v in val.items():
-                if sep is None:
-                    src[k] = v
-                else:
-                    _recursive_set(src, k.split(sep), v)
+                _recursive_apply(src, [k] if sep is None else k.split(sep), v,op=key,config=_config)
         else:
             raise NotImplementedError(dict(operation=operation))
     return src
 
 
 def edit_json(src: dict, patch: dict = {}) -> dict:
+    """
+    patch: dict([c=], ops=[op])
+    c: [sep='.'], 
+    op: 
+      k="$set", v={"a.b": 2}
+      k="$add", v={"a.b":[1,2]} [c= {only_new=False}]
+    """
     config = patch.get("c", {})
     if config.get("is_copy", False):
         src = copy.deepcopy(src)
