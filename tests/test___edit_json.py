@@ -21,16 +21,41 @@ import logging
 from alex_leontiev_toolbox_python.utils.edit_json import edit_json
 
 
-def test_edit_json_1():
+def test_edit_json_set():
     d = {"a": {"b": 1}}
     d = edit_json(d, dict(c=dict(sep="."), ops=[dict(k="$set", v={"a.b": 2})]))
     assert d == {"a": {"b": 2}}
 
-
-def test_edit_json_2():
     d = {"a": {"b": 1}}
     d = edit_json(d, dict(c=dict(sep="."), ops={"$set": {"a.b": 2}}))
     assert d == {"a": {"b": 2}}
+
+
+def test_edit_json_add():
+    d = {"a": {"b": [1]}}
+    d = edit_json(d, dict(c=dict(sep="."), ops={"$add": {"a.b": [1]}}))
+    assert d == {"a": {"b": [1, 1]}}
+
+    d = {"a": {"b": [1]}}
+    d = edit_json(
+        d,
+        dict(
+            c=dict(sep="."), ops=[dict(k="$add", v={"a.b": [1]}, c=dict(only_new=True))]
+        ),
+    )
+    assert d == {"a": {"b": [1]}}
+
+
+def test_edit_json_remove():
+    d = {"a": {"b": [1, 2, 3]}}
+    d = edit_json(d, dict(c=dict(sep="."), ops={"$remove": {"a.b": [2, 3]}}))
+    assert d == {"a": {"b": [1]}}
+
+
+def test_edit_json_pop():
+    d = {"a": {"b": [1, 2, 3]}}
+    d = edit_json(d, dict(c=dict(sep="."), ops={"$pop": {"a.b": None}}))
+    assert d == {"a": {}}
 
 
 # class TestEditJson(unittest.TestCase):
