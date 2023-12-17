@@ -30,7 +30,29 @@ import typing
 import logging
 import functools
 
+
 _DEFAULT_TABLE_ALIASES = ("tn1", "tn2")
+
+
+class IndexedTable:
+    def __init__(table_name: str, superkey: list[str], fetch_to_table: typing.Tuple):
+        self._table_name = table_name
+        self._superkey = superkey
+        self._fetch_to_table = fetch_to_table
+
+        fetch, to_table = fetch_to_table
+        assert is_superkey(table_name, superkey, fetch=fetch, to_table=to_table)
+
+    @property
+    def table_name(self):
+        return self._table_name
+
+    @property
+    def superkey(self):
+        return self._superkey
+
+    def to_dict(self) -> dict:
+        return dict(table_name=self.table_name, superkey=self.superkey)
 
 
 def schema_to_df(
@@ -55,8 +77,8 @@ def _original_field_name(fields):
 
 
 def is_superkey(
-    table_name,
-    candidate_superkey,
+    table_name: str,
+    candidate_superkey: list[str],
     fetch=None,
     to_table=None,
     is_return_debug_info=False,
