@@ -23,13 +23,24 @@ from google.cloud import bigquery
 import sqlalchemy
 import pandas as pd
 import logging
+import typing
 
 _TABLE_NAME_TO_DB_NAME_CONNECTOR = "___"
 _DASH_REPLACE = "__"
 
+_POST_PROCESSORS = {"str": lambda df: df.map(str)}
+
 
 class Fetcher:
-    def __init__(self, sqlalchemy_db="sqlite+pysqlite:///:memory:", bq_client=None, db_prefix="t_", download_limit_gb=1, to_dataframe_kwargs={"progress_bar_type": "tqdm"}, post_call_callbacks=[]):
+    def __init__(
+        self,
+        sqlalchemy_db="sqlite+pysqlite:///:memory:",
+        bq_client=None,
+        db_prefix="t_",
+        download_limit_gb=1,
+        to_dataframe_kwargs={"progress_bar_type": "tqdm"},
+        post_call_callbacks=[],
+    ):
         if bq_client is None:
             bq_client = bigquery.Client()
         self._bq_client = bq_client
@@ -45,26 +56,43 @@ class Fetcher:
         self._to_dataframe_kwargs = to_dataframe_kwargs
         self._post_call_callbacks = post_call_callbacks
 
-    def _db_table(self, table_name):
-        db_table = self._db_prefix + \
-            _TABLE_NAME_TO_DB_NAME_CONNECTOR.join(table_name.split("."))
+    def _db_table(self, table_name, post_process: typing.Optional[str]):
+        db_table = self._db_prefix + _TABLE_NAME_TO_DB_NAME_CONNECTOR.join(
+            table_name.split(".")
+        )
         db_table = db_table.replace("-", _DASH_REPLACE)
+        if post_process is not None:
+            db_table = f"{db_table}_{post_process}"
         return db_table
 
-    def __call__(self, table_name, is_return_debug_info=False, use_query_cache=True, to_dataframe_kwargs=None):
+    def __call__(
+        self,
+        table_name,
+        is_return_debug_info=False,
+        use_query_cache=True,
+        to_dataframe_kwargs=None,
+        post_process: typing.Optional[str] = None,
+    ):
         if to_dataframe_kwargs is None:
             to_dataframe_kwargs = self._to_dataframe_kwargs
-        db_table = self._db_table(table_name)
+        db_table = self._db_table(table_name, post_process)
         d = {"table_name": table_name}
-        if sqlalchemy.inspect(self._sqlalchemy_engine).has_table(db_table) and use_query_cache:
+        if (
+            sqlalchemy.inspect(self._sqlalchemy_engine).has_table(db_table)
+            and use_query_cache
+        ):
             d["is_executed"] = False
-            self._logger.warning(f"fetching \"{table_name}\" from cache")
+            self._logger.warning(f'fetching "{table_name}" from cache')
         else:
             d["is_executed"] = True
             num_bytes = self._bq_client.get_table(table_name).num_bytes
             d["num_bytes"] = num_bytes
-            df = self._bq_client.query(
-                f"select * from `{table_name}`").to_dataframe(**to_dataframe_kwargs)
+            df = self._bq_client.query(f"select * from `{table_name}`").to_dataframe(
+                **to_dataframe_kwargs
+            )
+            if post_process is not None:
+                df = _POST_PROCESSORS[post_process](df)
+
             with self._sqlalchemy_engine.begin() as conn:
                 df.to_sql(db_table, conn, if_exists="replace", index=False)
             self._quota_used_bytes += num_bytes
