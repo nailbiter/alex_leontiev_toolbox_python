@@ -36,6 +36,7 @@ import logging
 import time
 import pandas as pd
 import sqlparse
+import typing
 
 
 def _sql_to_hash(sql, algo="md5", salt=None):
@@ -228,6 +229,7 @@ class ToTabler:
         use_query_cache=True,
         is_return_debug_info=False,
         dry_run=False,
+        load_job_config: typing.Optional[bigquery.LoadJobConfig] = None,
     ):
         if wait_after_dataframe_upload_seconds is None:
             wait_after_dataframe_upload_seconds = (
@@ -247,6 +249,9 @@ class ToTabler:
             m.update(cn.encode())
         for x in pd.util.hash_pandas_object(df):
             m.update(str(x).encode())
+        if load_job_config is not None:
+            m.update(json.dumps(load_job_config.to_api_repr(), sort_keys=True).encode())
+
         table_name = self._prefix + additional_prefix + m.hexdigest()
         assert self._is_valid_table_name(table_name)
         if self._table_exists(table_name) and use_query_cache:
@@ -260,7 +265,9 @@ class ToTabler:
                     table_name,
                     job_config=bigquery.LoadJobConfig(
                         write_disposition="WRITE_TRUNCATE"
-                    ),
+                    )
+                    if load_job_config is None
+                    else load_job_config,
                 )
                 self._tables_cache.add(table_name)
                 self._logger.warning(f'creating table "{table_name}"')
