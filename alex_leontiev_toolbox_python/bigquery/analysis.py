@@ -151,6 +151,7 @@ def field_coverage_stats(
     is_return_debug_info=False,
     is_normalize_keys=True,
     aliases=_DEFAULT_TABLE_ALIASES,
+    weight: typing.Optional[str] = None,
 ):
     if fetch is None:
         fetch = Fetcher()
@@ -159,15 +160,20 @@ def field_coverage_stats(
     if is_normalize_keys:
         fields = sorted(set(fields))
     d = {}
+    ## FIXME: compress duplicated code (t1 vs t2)
+    ## in Template below
+    ## info for-loop
     d["rendered_sql"] = Template(
         """
     with t1 as (
-        select {{fields|join(",")}}, 1 {{aliases[0]}}
+        select {{fields|join(",")}},
+          {{ weight | default("1") }} {{ aliases[0] }},
         from `{{table_name_1}}`
         group by {{fields|join(",")}}
     )
     , t2 as (
-        select {{fields|join(",")}}, 1 {{aliases[1]}}
+        select {{fields|join(",")}},
+          {{ weight | default("1") }} {{ aliases[0] }},
         from `{{table_name_2}}`
         group by {{fields|join(",")}}
     )
@@ -187,6 +193,7 @@ def field_coverage_stats(
             "table_name_2": table_name_2,
             "aliases": aliases,
             "fields": fields,
+            "weight": weight,
         }
     )
     d["tn"] = to_table(d["rendered_sql"])
