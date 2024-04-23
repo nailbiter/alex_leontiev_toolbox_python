@@ -22,6 +22,7 @@ from alex_leontiev_toolbox_python.utils.project_management.network_diagrams impo
     Activity,
     NetworkDiagram,
 )
+import json
 
 
 def test_float_computation():
@@ -42,5 +43,13 @@ def test_float_computation():
     nd.depends_chain(*list("ACFHJK"))
     nd.depends_chain(*list("ADGIK"))
 
+    nd.set_start("A")
+    nd.set_end("K")
+
+    nd.compute_float()
+
     with open("/tmp/g1.dot", "w") as f:
-        f.write(nd.to_graphviz())
+        f.write(nd.to_graphviz(is_highlight_critical_path=True))
+
+    with open("/tmp/paths.txt", "w") as f:
+        json.dump(nd.get_paths("A", "K"), f)
