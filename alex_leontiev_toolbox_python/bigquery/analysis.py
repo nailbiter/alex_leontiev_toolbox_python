@@ -151,7 +151,7 @@ def field_coverage_stats(
     is_return_debug_info=False,
     is_normalize_keys=True,
     aliases=_DEFAULT_TABLE_ALIASES,
-    weight: typing.Optional[str] = None,
+    weight: typing.Optional[typing.Callable] = None,
 ):
     if fetch is None:
         fetch = Fetcher()
@@ -167,13 +167,23 @@ def field_coverage_stats(
         """
     with t1 as (
         select {{fields|join(",")}},
-          {{ weight | default("1") }} {{ aliases[0] }},
+          {% if weight is none %}
+            1
+          {% else %} 
+            {{ weight(0) }}
+          {% endif %} 
+          {{ aliases[0] }},
         from `{{table_name_1}}`
         group by {{fields|join(",")}}
     )
     , t2 as (
         select {{fields|join(",")}},
-          {{ weight | default("1") }} {{ aliases[0] }},
+          {% if weight is none %}
+            1
+          {% else %} 
+            {{ weight(1) }}
+          {% endif %} 
+          {{ aliases[1] }},
         from `{{table_name_2}}`
         group by {{fields|join(",")}}
     )
@@ -183,7 +193,13 @@ def field_coverage_stats(
             ifnull({{aliases[1]}}, 0) {{aliases[1]}},
         from t1 full outer join t2 using ({{fields|join(",")}})
     )
-    select {{aliases|join(",")}},count(1) cnt
+    select {{aliases|join(",")}},
+        {% if weight is none %}
+        count(1) cnt
+        {% else %}
+        sum({{ aliases[0] }}) sum_0,
+        sum({{ aliases[1] }}) sum_1,
+        {% endif %}
     from t
     group by {{aliases[0]}}, {{aliases[1]}}
     """
