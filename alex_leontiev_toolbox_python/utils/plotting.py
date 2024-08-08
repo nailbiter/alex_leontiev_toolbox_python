@@ -26,6 +26,17 @@ import uuid
 import os
 from matplotlib.backends.backend_pdf import PdfPages
 import logging
+import functools
+
+
+@functools.singledispatch
+def listify(x) -> list:
+    return [x]
+
+
+@listify.register
+def _(x: list) -> list:
+    return x
 
 
 def plot_to_pdf(
@@ -62,7 +73,9 @@ def plot_to_pdf(
         for page_val, page_slice in tqdm_factory(
             pl if page_key is None else sorted(pl, key=page_key)
         ):
+            page_val = listify(page_val)
             page_dict = dict(zip(pages, page_val))
+
             distinct_row_values, distinct_col_values = (
                 _get_distinct(page_slice, rows),
                 _get_distinct(page_slice, cols),
