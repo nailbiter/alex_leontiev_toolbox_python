@@ -41,6 +41,11 @@ def _(x: list) -> list:
     return x
 
 
+@listify.register
+def _(x: tuple) -> list:
+    return list(x)
+
+
 def plot_to_pdf(
     df: pd.DataFrame,
     plotter: typing.Callable,
