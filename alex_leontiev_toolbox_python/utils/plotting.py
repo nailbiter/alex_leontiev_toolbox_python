@@ -103,9 +103,7 @@ def plot_to_pdf(
 
             axs_d = {}
             for (row_val, col_val), ax in zip(
-                itertools.product(
-                    itertools.product(distinct_row_values, distinct_col_values)
-                ),
+                itertools.product(distinct_row_values, distinct_col_values),
                 axs.flatten(),
             ):
                 axs_d[(tuple(row_val), tuple(col_val))] = ax
