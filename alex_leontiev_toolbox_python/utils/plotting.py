@@ -38,7 +38,7 @@ def plot_to_pdf(
     subplots_kwargs: dict = {},
     is_open: bool = False,
     tqdm_factory: typing.Callable = lambda x: x,
-    page_key: typing.Optiona[typing.Callable] = None,
+    page_key: typing.Optional[typing.Callable] = None,
     is_loud: bool = True,
 ) -> str:
     fn = f"/tmp/{uuid.uuid4()}.pdf" if fn is None else fn
