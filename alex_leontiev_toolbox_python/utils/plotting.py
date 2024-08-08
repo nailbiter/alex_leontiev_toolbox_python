@@ -99,6 +99,15 @@ def plot_to_pdf(
             )
             logging.warning(axs)
 
+            for row_val, col_val, ax in zip(
+                itertools.product(distinct_row_values, distinct_col_values),
+                axs.resize(-1),
+            ):
+                row_dict = dict(zip(rows, listify(row_val)))
+                col_dict = dict(zip(rows, listify(col_val)))
+                if is_loud:
+                    logging.warning((row_dict, col_dict))
+
             post_process_fig(fig)
             plt.close()
             pdf.savefig(fig)
