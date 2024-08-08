@@ -27,6 +27,7 @@ import os
 from matplotlib.backends.backend_pdf import PdfPages
 import logging
 import functools
+import itertools
 
 
 @functools.singledispatch
