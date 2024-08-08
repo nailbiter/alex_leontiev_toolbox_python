@@ -62,7 +62,7 @@ def plot_to_pdf(
         for page_val, page_slice in tqdm_factory(
             pl if page_key is None else sorted(pl, key=page_key)
         ):
-            page_dict = dict(zip(page_key, page_val))
+            page_dict = dict(zip(pages, page_val))
             distinct_row_values, distinct_col_values = (
                 _get_distinct(page_slice, rows),
                 _get_distinct(page_slice, cols),
