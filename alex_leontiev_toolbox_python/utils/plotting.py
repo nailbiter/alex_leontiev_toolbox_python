@@ -102,7 +102,7 @@ def plot_to_pdf(
 
             for row_val, col_val, ax in zip(
                 itertools.product(distinct_row_values, distinct_col_values),
-                axs.resize(-1),
+                axs.flatten(),
             ):
                 row_dict = dict(zip(rows, listify(row_val)))
                 col_dict = dict(zip(rows, listify(col_val)))
