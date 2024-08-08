@@ -84,9 +84,9 @@ def plot_to_pdf(
                 _get_distinct(page_slice, rows),
                 _get_distinct(page_slice, cols),
             )
-            if row_sort_key != 1:
+            if row_sort_key != -1:
                 distinct_row_values = sorted(distinct_row_values, key=row_sort_key)
-            if col_sort_key != 1:
+            if col_sort_key != -1:
                 distinct_col_values = sorted(distinct_col_values, key=col_sort_key)
 
             nrows, ncols = len(distinct_row_values), len(distinct_col_values)
