@@ -115,8 +115,8 @@ def plot_to_pdf(
                 rv, cv = tuple(v[: len(rows)]), tuple(v[len(rows) :])
                 plotter(
                     ax=axs_d[rv, cv],
-                    row_dict=dict(rows, listify(rv)),
-                    col_dict=dict(cols, listify(cv)),
+                    row_dict=dict(zip(rows, listify(rv))),
+                    col_dict=dict(zip(cols, listify(cv))),
                     data=slc,
                     page_dict=page_dict,
                 )
