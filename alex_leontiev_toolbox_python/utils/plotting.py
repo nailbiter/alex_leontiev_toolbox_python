@@ -113,6 +113,8 @@ def plot_to_pdf(
 
             for v, slc in page_slice.groupby([*rows, *cols]):
                 rv, cv = tuple(v[: len(rows)]), tuple(v[len(rows) :])
+                if is_loud:
+                    logging.warning((rv, cv))
                 plotter(
                     ax=axs_d[rv, cv],
                     row_dict=dict(zip(rows, listify(rv))),
