@@ -56,7 +56,7 @@ def plot_to_pdf(
     row_sort_key: typing.Optional[typing.Callable] = -1,
     col_sort_key: typing.Optional[typing.Callable] = -1,
     is_loud: bool = True,
-    post_process_fig: typing.Callable = lambda _: None,
+    post_process_fig: typing.Callable = lambda **_: None,
 ) -> str:
     fn = f"/tmp/{uuid.uuid4()}.pdf" if fn is None else fn
     df = df.copy()
@@ -101,30 +101,29 @@ def plot_to_pdf(
             )
             logging.warning(axs)
 
-            for (row_val, col_val), ax in zip(
-                itertools.product(distinct_row_values, distinct_col_values),
+            axs_d = {}
+            for row_val, col_val in zip(
+                itertools.product(
+                    itertools.product(distinct_row_values, distinct_col_values)
+                ),
                 axs.flatten(),
             ):
-                row_dict = dict(zip(rows, listify(row_val)))
-                col_dict = dict(zip(rows, listify(col_val)))
-                if is_loud:
-                    logging.warning((row_dict, col_dict))
-                slice_ = df[
-                    [
-                        (row == np.array([*row_val, col_val])).all()
-                        for row in df[rows + cols].values
-                    ]
-                ]
-                if len(slice_) > 0:
-                    plotter(
-                        ax=ax,
-                        row_dict=row_dict,
-                        col_dict=col_dict,
-                        data=slice_,
-                        page_dict=page_dict,
-                    )
+                axs_d[(tuple(row_val), tuple(col_val))] = ax
 
-            post_process_fig(fig)
+            if is_loud:
+                logging.warning(axs_d)
+
+            for v, slc in page_slice.groupby([*rows, *cols]):
+                rv, cv = tuple(v[: len(rows)]), tuple(v[len(rows) :])
+                plotter(
+                    ax=axs_d[rv, cv],
+                    row_dict=dict(rows, listify(rv)),
+                    col_dict=dict(cols, listify(cv)),
+                    data=slc,
+                    page_dict=page_dict,
+                )
+
+            post_process_fig(fig=fig)
             plt.close()
             pdf.savefig(fig)
 
