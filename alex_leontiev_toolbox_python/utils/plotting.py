@@ -28,6 +28,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 import logging
 import functools
 import itertools
+import numpy as np
 
 
 @functools.singledispatch
