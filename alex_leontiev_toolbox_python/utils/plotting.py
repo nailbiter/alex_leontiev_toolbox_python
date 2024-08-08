@@ -92,7 +92,7 @@ def plot_to_pdf(
             nrows, ncols = len(distinct_row_values), len(distinct_col_values)
 
             if is_loud:
-                logging.warning((page_dict, rows, cols, nr, nc))
+                logging.warning((page_dict, rows, cols, nrows, ncols))
 
             fig, axs = plt.subplots(
                 **{"nrows": nrows, "ncols": ncols, "squeeze": False, **subplots_kwargs}
