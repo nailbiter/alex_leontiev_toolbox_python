@@ -95,7 +95,7 @@ def plot_to_pdf(
                 logging.warning((page_dict, rows, cols, nr, nc))
 
             fig, axs = plt.subplots(
-                **{"nrows": nrows, "ncols": ncols, "squeeze": True, **subplots_kwargs}
+                **{"nrows": nrows, "ncols": ncols, "squeeze": False, **subplots_kwargs}
             )
             logging.warning(axs)
 
