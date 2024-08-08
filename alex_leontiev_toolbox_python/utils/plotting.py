@@ -49,8 +49,12 @@ def plot_to_pdf(
     subplots_kwargs: dict = {},
     is_open: bool = False,
     tqdm_factory: typing.Callable = lambda x: x,
-    page_key: typing.Optional[typing.Callable] = None,
+    # FIXME: fix types of `_key`s
+    page_sort_key: typing.Optional[typing.Callable] = -1,
+    row_sort_key: typing.Optional[typing.Callable] = -1,
+    col_sort_key: typing.Optional[typing.Callable] = -1,
     is_loud: bool = True,
+    post_process_fig: typing.Callable = lambda _: None,
 ) -> str:
     fn = f"/tmp/{uuid.uuid4()}.pdf" if fn is None else fn
     df = df.copy()
@@ -71,7 +75,7 @@ def plot_to_pdf(
     with PdfPages(fn) as pdf:
         pl = list(df.groupby(pages))
         for page_val, page_slice in tqdm_factory(
-            pl if page_key is None else sorted(pl, key=page_key)
+            pl if page_sort_key == -1 else sorted(pl, key=page_sort_key)
         ):
             page_val = listify(page_val)
             page_dict = dict(zip(pages, page_val))
@@ -80,13 +84,20 @@ def plot_to_pdf(
                 _get_distinct(page_slice, rows),
                 _get_distinct(page_slice, cols),
             )
-            nr, nc = len(distinct_row_values), len(distinct_col_values)
+            if row_sort_key != 1:
+                distinct_row_values = sorted(distinct_row_values, key=row_sort_key)
+            if col_sort_key != 1:
+                distinct_col_values = sorted(distinct_col_values, key=col_sort_key)
+
+            nrows, ncols = len(distinct_row_values), len(distinct_col_values)
 
             if is_loud:
                 logging.warning((page_dict, rows, cols, nr, nc))
 
-            fig, axs = plt.subplots(nr=nr, nc=nc, **subplots_kwargs)
+            fig, axs = plt.subplots(nrows=nrows, ncols=ncols, **subplots_kwargs)
+            logging.warning(axs)
 
+            post_process_fig(fig)
             plt.close()
             pdf.savefig(fig)
 
