@@ -102,7 +102,7 @@ def plot_to_pdf(
             logging.warning(axs)
 
             axs_d = {}
-            for row_val, col_val in zip(
+            for (row_val, col_val), ax in zip(
                 itertools.product(
                     itertools.product(distinct_row_values, distinct_col_values)
                 ),
