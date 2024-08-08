@@ -108,6 +108,20 @@ def plot_to_pdf(
                 col_dict = dict(zip(rows, listify(col_val)))
                 if is_loud:
                     logging.warning((row_dict, col_dict))
+                slice_ = df[
+                    [
+                        (row == np.array([*row_val, col_val])).all()
+                        for row in df[rows + cols].values
+                    ]
+                ]
+                if len(slice_) > 0:
+                    plotter(
+                        ax=ax,
+                        row_dict=row_dict,
+                        col_dict=col_dict,
+                        df=slice_,
+                        page_dict=page_dict,
+                    )
 
             post_process_fig(fig)
             plt.close()
