@@ -119,7 +119,7 @@ def plot_to_pdf(
                         ax=ax,
                         row_dict=row_dict,
                         col_dict=col_dict,
-                        df=slice_,
+                        data=slice_,
                         page_dict=page_dict,
                     )
 
