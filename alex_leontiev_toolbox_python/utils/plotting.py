@@ -104,7 +104,8 @@ def plot_to_pdf(
             fig, axs = plt.subplots(
                 **{"nrows": nrows, "ncols": ncols, "squeeze": False, **subplots_kwargs}
             )
-            logging.warning(axs)
+            if is_loud:
+                logging.warning(axs)
 
             axs_d = {}
             for (row_val, col_val), ax in zip(
@@ -128,9 +129,23 @@ def plot_to_pdf(
                     page_dict=page_dict,
                 )
 
-            post_process_fig(fig=fig)
-            plt.close()
+            post_process_fig_res = post_process_fig(
+                fig=fig,
+                page_dict=page_dict,
+                page_slice=page_slice,
+            )
+
+            post_process_fig_res = (
+                (True, True) if post_process_fig_res is None else post_process_fig_res
+            )
+            is_close, is_continue = post_process_fig_res
+
+            if is_close:
+                plt.close()
             pdf.savefig(fig)
+
+            if not is_should_continue:
+                break
 
     if is_open:
         os.system(f"open {fn}")
