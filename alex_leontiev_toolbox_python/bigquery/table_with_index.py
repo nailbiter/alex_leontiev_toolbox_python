@@ -18,13 +18,28 @@ ORGANIZATION:
 
 ==============================================================================="""
 import typing
+import logging
+from google.cloud import bigquery
+import pandas as pd
+import operator
+import functols
 
 
 class TableWithIndex:
-    def __init__(self, table_name: str, index: list[str], is_superkey: typing.Callable):
-        assert is_superkey(table_name, index), (table_name, index)
+    def __init__(
+        self,
+        table_name: str,
+        index: list[str],
+        is_superkey: typing.Optional[typing.Callable] = None,
+        _is_skip: bool = False,
+    ):
+        index = tuple(index)
+        assert len(index) > 0, index
+        if not _is_skip:
+            assert is_superkey(table_name, index), (table_name, index)
         self._table_name = table_name
-        self._index = tuple(index)
+        self._index = index
+        self._logger = logging.getLogger(self.__class__.__name__)
 
     @property
     def table_name(self) -> str:
@@ -33,3 +48,28 @@ class TableWithIndex:
     @property
     def index(self) -> typing.Tuple[str]:
         return self._index
+
+    def join(
+        self, right: TableWithIndex, to_table: typing.Callable, join_sql: str = "join"
+    ) -> TableWithIndex:
+        sql = f"""
+        select
+        from `{self.table_name}`
+          {join_sql} `{right.table_name}`
+          using ({','.join(right.index)})
+        """
+        self._logger.warning(sql)
+        tn = to_table(sql)
+        return TableWithIndex(tn, self.index, _is_skip=True)
+
+    @functols.cached_property
+    def schema_df(self) -> pd.DataFrame:
+        bq_client = bigquery.Client()
+        res = pd.DataFrame(
+            map(
+                operator.methodcaller("to_api_repr"),
+                bq_client.get_table(self.table_name).schema,
+            )
+        )
+        res["is_key"] = res["name"].isin(self.index)
+        return res
