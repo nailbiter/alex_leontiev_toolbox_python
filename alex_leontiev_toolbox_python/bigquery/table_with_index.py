@@ -24,12 +24,12 @@ class TableWithIndex:
     def __init__(self, table_name: str, index: list[str], is_superkey: typing.Callable):
         assert is_superkey(table_name, index), (table_name, index)
         self._table_name = table_name
-        self._index = index
+        self._index = tuple(index)
 
     @property
     def table_name(self) -> str:
         return self._table_name
 
     @property
-    def index(self) -> list[str]:
-        return list(self._index)
+    def index(self) -> typing.Tuple[str]:
+        return self._index
