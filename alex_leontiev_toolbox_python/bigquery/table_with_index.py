@@ -22,7 +22,7 @@ import logging
 from google.cloud import bigquery
 import pandas as pd
 import operator
-import functols
+import functools
 
 
 class TableWithIndex:
@@ -49,9 +49,7 @@ class TableWithIndex:
     def index(self) -> typing.Tuple[str]:
         return self._index
 
-    def join(
-        self, right: TableWithIndex, to_table: typing.Callable, join_sql: str = "join"
-    ) -> TableWithIndex:
+    def join(self, right, to_table: typing.Callable, join_sql: str = "join"):
         sql = f"""
         select
         from `{self.table_name}`
@@ -62,7 +60,7 @@ class TableWithIndex:
         tn = to_table(sql)
         return TableWithIndex(tn, self.index, _is_skip=True)
 
-    @functols.cached_property
+    @functools.cached_property
     def schema_df(self) -> pd.DataFrame:
         bq_client = bigquery.Client()
         res = pd.DataFrame(
