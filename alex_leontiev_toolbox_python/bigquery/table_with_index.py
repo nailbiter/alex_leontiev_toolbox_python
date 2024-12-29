@@ -33,7 +33,7 @@ class TableWithIndex:
         is_superkey: typing.Optional[typing.Callable] = None,
         _is_skip: bool = False,
     ):
-        index = tuple(index)
+        index = tuple(sorted(set(index)))
         assert len(index) > 0, index
         if not _is_skip:
             assert is_superkey(table_name, index), (table_name, index)
@@ -71,3 +71,6 @@ class TableWithIndex:
         )
         res["is_key"] = res["name"].isin(self.index)
         return res
+
+    def __str__(self):
+        return f"{self.__class__.__name__}(table_name={self.table_name}, index={self.index})"
