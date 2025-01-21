@@ -101,4 +101,9 @@ LEFT JOIN
 
 def test_query_to_subqueries():
     d = query_to_subqueries(_SAMPLE_SQLS[0], is_loud=True)
-    assert d == {}
+    d_true = {
+        "CustomerTotalOrders": """
+    """
+    }
+    d_true = {k: v.strip() for k, v in d_true.items()}
+    assert d == d_true
