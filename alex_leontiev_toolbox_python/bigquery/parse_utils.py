@@ -26,10 +26,10 @@ import logging
 def query_to_subqueries(sql: str, is_loud: bool = False) -> dict:
     (statement,) = sqlparse.parse(sql)
     t, *_ = [t for t in statement.tokens if t.__class__.__name__ == "IdentifierList"]
-    if is_bool:
+    if is_loud:
         logging.warning(t)
     identifiers = [t_ for t_ in t.tokens if t_.__class__.__name__ == "Identifier"]
-    if is_bool:
+    if is_loud:
         logging.warning(identifiers)
     d = {i.tokens[0].value: i.tokens[-1].value[1:-1].strip() for i in identifiers}
     return d
