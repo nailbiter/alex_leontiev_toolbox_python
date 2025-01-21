@@ -101,9 +101,23 @@ LEFT JOIN
 
 def test_query_to_subqueries():
     d = query_to_subqueries(_SAMPLE_SQLS[0], is_loud=True)
-    d_true = {
-        "CustomerTotalOrders": """
-    """
+    assert set(d.keys()) == {
+        "OrderedProducts",
+        "OrderTotals",
+        "HighValueCustomers",
+        "CustomerTotalOrders",
     }
-    d_true = {k: v.strip() for k, v in d_true.items()}
-    assert d == d_true
+    assert (
+        d["OrderedProducts"]
+        == """
+    SELECT
+        oi.order_id,
+        ARRAY_AGG(p.product_name) AS products_ordered
+    FROM
+        `order_items` AS oi
+    LEFT JOIN
+        `products` AS p ON oi.product_id = p.product_id
+    GROUP BY
+        oi.order_id
+    """.strip()
+    )
