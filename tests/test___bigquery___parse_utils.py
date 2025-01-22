@@ -19,7 +19,14 @@ ORGANIZATION:
 ==============================================================================="""
 import logging
 import unittest
-from alex_leontiev_toolbox_python.bigquery.parse_utils import query_to_subqueries
+from alex_leontiev_toolbox_python.bigquery.parse_utils import (
+    query_to_subqueries,
+    find_table_names_in_sql_source,
+    TABLE_NAME_REGEX_GEMINI,
+)
+
+## bogus import, just one more syntax/load-code check
+import alex_leontiev_toolbox_python.bigquery
 
 
 # class TestBigqueryParseUtils(unittest.TestCase):
@@ -96,6 +103,81 @@ LEFT JOIN
 LEFT JOIN
     OrderedProducts AS op ON o.order_id = op.order_id
     """,
+    """
+    /*
+This query retrieves information about orders from customers 
+who have placed more than 5 orders. It utilizes WITH clauses
+to improve readability and organization by breaking down the
+logic into smaller, named subqueries.
+*/
+
+WITH CustomerTotalOrders AS (
+    -- Calculate the total number of orders for each customer
+    SELECT
+        c.customer_id,
+        c.customer_name,
+        COUNT(o.order_id) AS total_orders
+    FROM
+        `customers` AS c
+    LEFT JOIN
+        `orders` AS o ON c.customer_id = o.customer_id
+    GROUP BY
+        c.customer_id, c.customer_name
+),
+
+HighValueCustomers AS (
+    -- Filter customers who have placed more than 5 orders
+    SELECT
+        customer_id,
+        customer_name
+    FROM
+        CustomerTotalOrders
+    WHERE
+        total_orders > 5
+),
+
+OrderTotals AS (
+    -- Calculate the total amount for each order
+    SELECT
+        o.order_id,
+        SUM(oi.quantity * oi.unit_price) AS total_amount
+    FROM
+        `orders` AS o
+    LEFT JOIN
+        `order_items` AS oi ON o.order_id = oi.order_id
+    GROUP BY
+        o.order_id
+),
+
+OrderedProducts AS (
+    -- Aggregate the names of products included in each order
+    SELECT
+        oi.order_id,
+        ARRAY_AGG(p.product_name) AS products_ordered
+    FROM
+        `order_items` AS oi
+    LEFT JOIN
+        `products` AS p ON oi.product_id = p.product_id
+    GROUP BY
+        oi.order_id
+)
+
+-- Join the results from the CTEs to retrieve the final output
+SELECT
+    o.order_id,
+    o.order_date,
+    hvc.customer_name,
+    ot.total_amount,
+    op.products_ordered
+FROM
+    `orders` AS o
+LEFT JOIN
+    HighValueCustomers AS hvc ON o.customer_id = hvc.customer_id
+LEFT JOIN
+    OrderTotals AS ot ON o.order_id = ot.order_id
+LEFT JOIN
+    OrderedProducts AS op ON o.order_id = op.order_id
+    """,
 ]
 
 
@@ -120,4 +202,43 @@ def test_query_to_subqueries():
     GROUP BY
         oi.order_id
     """.strip()
+    )
+
+
+def test_find_table_names_in_sql_source():
+    assert find_table_names_in_sql_source(
+        "select * from `api-project-424250507607.b7a150d3.t_915d8cbae22f305fab72d94e9815e391`"
+    ) == {
+        "api-project-424250507607.b7a150d3.t_915d8cbae22f305fab72d94e9815e391",
+    }
+    assert (
+        find_table_names_in_sql_source(
+            """
+        --`api-project-424250507607.b7a150d3.t_uocuoueoeu`
+        select * from `api-project-424250507607.b7a150d3.t_oeroygrccyo123123`
+    """
+        )
+        == {
+            "api-project-424250507607.b7a150d3.t_oeroygrccyo123123",
+        }
+    )
+
+    ## gemini
+    assert find_table_names_in_sql_source(
+        "select * from `api-project-424250507607.b7a150d3.t_915d8cbae22f305fab72d94e9815e391`",
+        table_name_regex=TABLE_NAME_REGEX_GEMINI,
+    ) == {
+        "api-project-424250507607.b7a150d3.t_915d8cbae22f305fab72d94e9815e391",
+    }
+    assert (
+        find_table_names_in_sql_source(
+            """
+        --`api-project-424250507607.b7a150d3.t_uocuoueoeu`
+        select * from `api-project-424250507607.b7a150d3.t_oeroygrccyo123123`
+    """,
+            table_name_regex=TABLE_NAME_REGEX_GEMINI,
+        )
+        == {
+            "api-project-424250507607.b7a150d3.t_oeroygrccyo123123",
+        }
     )

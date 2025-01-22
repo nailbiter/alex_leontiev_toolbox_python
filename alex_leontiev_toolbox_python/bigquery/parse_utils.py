@@ -21,6 +21,21 @@ ORGANIZATION:
 import sqlparse
 import typing
 import logging
+import re
+
+TABLE_NAME_REGEX_MANUAL = re.compile(
+    r"""`([a-z0-9-]{5,29}[a-z0-9]\.[a-zA-Z0-9_]{1,1024}\.[\s\d\w-]{1,1024})`"""
+)
+
+TABLE_NAME_REGEX_GEMINI = re.compile(
+    ## https://g.co/gemini/share/88c39b5c709c
+    # r"""(?i)  # Case-insensitive matching
+    # `?  # Optional backtick for standard SQL
+    # (?:(?:[a-zA-Z0-9_-]+\.)?[a-zA-Z0-9_-]+\.)?  # Optional project and dataset names
+    # [a-zA-Z0-9_-]+\.?  # Table name with optional trailing dot
+    # `?  # Optional closing backtick for standard SQL"""
+    r"""(?i)`?(?:(?:[a-zA-Z0-9_-]+\.)?[a-zA-Z0-9_-]+\.)?[a-zA-Z0-9_-]+\.?`?"""
+)
 
 
 def query_to_subqueries(sql: str, is_loud: bool = False) -> dict:
@@ -33,3 +48,26 @@ def query_to_subqueries(sql: str, is_loud: bool = False) -> dict:
         logging.warning(identifiers)
     d = {i.tokens[0].value: i.tokens[-1].value[1:-1].strip() for i in identifiers}
     return d
+
+
+def find_table_names_in_sql_source(
+    sql_source,
+    bq_client=None,
+    is_use_bq_client=False,
+    table_name_regex=TABLE_NAME_REGEX_MANUAL,
+):
+    from google.cloud import bigquery
+
+    """
+    FIXME:
+        1. enable `is_use_bq_client`
+    """
+    if is_use_bq_client:
+        raise NotImplementedError()
+
+    if (bq_client is None) and is_use_bq_client:
+        bq_client = bigquery.Client()
+
+    sql_source = sqlparse.format(sql_source, strip_comments=True)
+
+    return {tn for tn in table_name_regex.findall(sql_source)}

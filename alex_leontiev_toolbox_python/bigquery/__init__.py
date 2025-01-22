@@ -26,6 +26,7 @@ import logging
 import re
 import sqlparse
 from datetime import datetime, timedelta
+import typing
 
 
 def table_exists(table_name, bq_client=None, entity="table"):
@@ -119,42 +120,19 @@ def list_tables(
 FIXME (improve):
     1. 
 """
-TABLE_NAME_REGEX = re.compile(
-    r"""`([a-z0-9-]{5,29}[a-z0-9]\.[a-zA-Z0-9_]{1,1024}\.[\s\d\w]{1,1024})`"""
-)
-
-
-def find_table_names_in_sql_source(
-    sql_source,
-    bq_client=None,
-    is_use_bq_client=False,
-    table_name_regex=TABLE_NAME_REGEX,
-):
-    """
-    FIXME:
-        1. enable `is_use_bq_client`
-    """
-    if is_use_bq_client:
-        raise NotImplementedError()
-
-    if (bq_client is None) and is_use_bq_client:
-        bq_client = bigquery.Client()
-
-    sql_source = sqlparse.format(sql_source, strip_comments=True)
-
-    return {tn for tn in table_name_regex.findall(sql_source)}
 
 
 def table_ref_to_table(tref, proj_dataset_symbol="."):
     return f"{tref.project}{proj_dataset_symbol}{tref.dataset_id}.{tref.table_id}"
 
 
-def _query_regex_search_method(job, dest):
-    regex = re.compile(
-        f"create\\s+(or\\s+replace\\s+)?table\\s*`{dest}`", re.IGNORECASE
+def _query_regex_search_method(job, dest, regex: typing.Optional[re.Pattern] = None):
+    regex = (
+        re.compile(f"create\\s+(or\\s+replace\\s+)?table\\s*`{dest}`", re.IGNORECASE)
+        if regex is None
+        else regex
     )
     res = regex.search(job.query) is not None
-
     #    logging.warning((job, job.query, res, regex))
     return res
 
