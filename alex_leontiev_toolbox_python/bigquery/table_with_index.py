@@ -49,16 +49,32 @@ class TableWithIndex:
     def index(self) -> typing.Tuple[str]:
         return self._index
 
-    def join(self, right, to_table: typing.Callable, join_sql: str = "join"):
+    def join(
+        self,
+        right,
+        to_table: typing.Callable,
+        join_sql: str = "join",
+        is_force_verify: bool = False,
+        join_key=None,
+        result_key=None,
+    ):
+        # join_key = right.index
+        join_key = right.index if join_key is None else join_key
         sql = f"""
         select
         from `{self.table_name}`
           {join_sql} `{right.table_name}`
-          using ({','.join(right.index)})
+          using ({','.join(join_key)})
         """
         self._logger.warning(sql)
         tn = to_table(sql)
-        return TableWithIndex(tn, self.index, _is_skip=True)
+        return TableWithIndex(
+            tn,
+            self.index if result_key is None else result_key,
+            _is_skip=(not is_force_verify)
+            and (join_key is None)
+            and (result_key is None),
+        )
 
     @functools.cached_property
     def schema_df(self) -> pd.DataFrame:
