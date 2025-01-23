@@ -83,6 +83,7 @@ def is_superkey(
     to_table=None,
     is_return_debug_info=False,
     is_normalize_keys=True,
+    is_verify_keys_are_not_null: bool = True,
     count_field_name="cnt",
     fetch_lines=0,
 ):
@@ -106,7 +107,23 @@ def is_superkey(
         to_table = ToTabler()
     if is_normalize_keys:
         candidate_superkey = sorted(set(candidate_superkey))
+
     d = {}
+    if is_verify_keys_are_not_null:
+        (d_null,) = fetch(
+            to_table(
+                Template(
+                    """
+        select
+          {% for cn in candidate_superkey -%}
+          countif({{ cn }} is null) {{cn}},
+          {% endfor -%}
+        from `{{ table_name }}`
+        """
+                )
+            ).render(table_name=table_name, candidate_superkey=candidate_superkey)
+        ).to_dict(orient="records")
+        assert pd.Series(d_null).max() == 0, d_null
     d["rendered_sql"] = Template(
         """
         select {{candidate_superkey|join(",")}}, count(1) {{cnt_fn}},
