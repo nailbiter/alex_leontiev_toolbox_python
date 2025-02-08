@@ -92,7 +92,7 @@ def plot_to_pdf(
     pdf, is_created_by_us = filename_or_pdf_to_pdf(fn)
     pl = list(df.groupby(pages))
     for page_val, page_slice in tqdm_factory(
-        pl if page_sort_key == -1 else sorted(pl, key=page_sort_key)
+        pl if page_sort_key == -1 else sorted(pl, key=lambda t: page_sort_key(t[0]))
     ):
         page_val = listify(page_val)
         page_dict = dict(zip(pages, page_val))
