@@ -120,8 +120,8 @@ def is_superkey(
           {% endfor -%}
         from `{{ table_name }}`
         """
-                )
-            ).render(table_name=table_name, candidate_superkey=candidate_superkey)
+                ).render(table_name=table_name, candidate_superkey=candidate_superkey)
+            )
         ).to_dict(orient="records")
         assert pd.Series(d_null).max() == 0, d_null
     d["rendered_sql"] = Template(
