@@ -20,7 +20,6 @@ ORGANIZATION:
 import logging
 import unittest
 from alex_leontiev_toolbox_python.utils.click_helpers.datetime_classes import (
-    SimpleCliDatetimeParamType,
     parse_cmdline_datetime,
 )
 from datetime import datetime
