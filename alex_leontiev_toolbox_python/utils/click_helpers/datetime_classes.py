@@ -127,7 +127,7 @@ class ConvenientCliDatetimeParamType(click.ParamType):
 
     def convert(self, value, param, ctx):
         return parse_cmdline_datetime(
-            value, **kwargs, fail_callback=lambda msg: self.fail(msg, param, ctx)
+            value, **self._kwargs, fail_callback=lambda msg: self.fail(msg, param, ctx)
         )
 
 
