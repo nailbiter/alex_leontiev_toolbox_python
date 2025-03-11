@@ -50,7 +50,7 @@ class FsCache:
         def _f(*args, **kwargs):
             sha = getattr(hashlib, self._hash_algo)(
                 json.dumps(
-                    dict(args=args, kwargs=kwargs), sorted=True, ensure_ascii=True
+                    dict(args=args, kwargs=kwargs), sort_keys=True, ensure_ascii=True
                 ).encode("utf-8")
             ).hexdigest()
             file_name = path.join(self._dirname, f"{sha}.pkl")
