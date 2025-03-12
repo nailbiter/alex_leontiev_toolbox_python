@@ -30,6 +30,7 @@ import os
 from os import path
 import sqlite3
 import uuid
+import typing
 
 
 def string_to_hash(s, algo="md5"):
@@ -37,11 +38,24 @@ def string_to_hash(s, algo="md5"):
     return getattr(hashlib, algo)(s.encode()).hexdigest()
 
 
-def format_bytes(b, unit="gib", is_raw=False):
-    _UNITS = {**{f"{w}ib": 2 ** (10 * (i + 1)) for i, w in enumerate(list("kmgtp"))}}
-    assert unit in _UNITS
+_BYTES_UNITS = {
+    **{
+        (w if w == "b" else f"{w}ib"): 2 ** (10 * i)
+        for i, w in enumerate(list("bkmgtp"))
+    }
+}
 
-    b /= _UNITS[unit]
+
+def format_bytes(b: int, unit: typing.Optional[str] = None, is_raw: bool = False):
+    assert unit in _BYTES_UNITS or unit is None, (unit, _BYTES_UNITS)
+    if unit is None:
+        for k, v in _BYTES_UNITS.items():
+            unit = k
+            if 1 <= b < 2**10:
+                break
+            b /= 2**10
+    else:
+        b /= _BYTES_UNITS[unit]
     return (b, unit) if is_raw else f"{b:.2f}{unit}"
 
 

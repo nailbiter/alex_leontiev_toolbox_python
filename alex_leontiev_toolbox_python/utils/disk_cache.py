@@ -58,7 +58,7 @@ class FsCache:
                 self._log(f"cache hit with {file_name}")
                 return load_from_pickle(file_name, print_cb=self._log)
             else:
-                self._log(f"cache miss hit with {file_name}")
+                self._log(f"cache miss with {file_name}")
                 res = f(*args, **kwargs)
                 save_to_pickle(res, file_name, print_cb=self._log)
                 return res

@@ -18,6 +18,7 @@ ORGANIZATION:
 
 ==============================================================================="""
 import alex_leontiev_toolbox_python.utils
+from alex_leontiev_toolbox_python.utils import format_bytes
 from alex_leontiev_toolbox_python.utils import TimeItContext
 import time
 import pandas as pd
@@ -26,12 +27,12 @@ import functools
 
 
 def test_format_bytes():
-    assert (
-        alex_leontiev_toolbox_python.utils.format_bytes(1000, unit="kib") == "0.98kib"
-    )
-    assert alex_leontiev_toolbox_python.utils.format_bytes(
-        1000, unit="kib", is_raw=True
-    ) == (0.9765625, "kib")
+    assert format_bytes(1000, unit="kib") == "0.98kib"
+    assert format_bytes(1000, unit="kib", is_raw=True) == (0.9765625, "kib")
+    assert format_bytes(1, unit=None) == "1.00b"
+    assert format_bytes(1000, unit=None) == "1000.00b"
+    assert format_bytes(1025, unit=None) == "1.00kib"
+    assert format_bytes(1025 * 2**10, unit=None) == "1.00mib"
 
 
 def test_number_lines():

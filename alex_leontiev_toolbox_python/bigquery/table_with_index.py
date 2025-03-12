@@ -23,6 +23,8 @@ from google.cloud import bigquery
 import pandas as pd
 import operator
 import functools
+import os
+import json
 
 
 class TableWithIndex:
@@ -32,14 +34,47 @@ class TableWithIndex:
         index: list[str],
         is_superkey: typing.Optional[typing.Callable] = None,
         _is_skip: bool = False,
+        bytes_size: typing.Optional[int] = None,
+        bq_client_kwargs: dict = {},
     ):
         index = tuple(sorted(set(index)))
         assert len(index) > 0, index
+
+        bq_client = bigquery.Client(**bq_client_kwargs)
+        t = bq_client.get_table(table_name)
+        self._t = t
+        schema = {s.name for s in t.schema}
+        assert set(index) <= set(schema), (index, schema)
+
         if not _is_skip:
             assert is_superkey(table_name, index), (table_name, index)
         self._table_name = table_name
         self._index = index
         self._logger = logging.getLogger(self.__class__.__name__)
+        self._bytes_size = bytes_size
+
+    @property
+    def schema(self) -> pd.DataFrame:
+        return self.get_schema()
+
+    def get_schema(self) -> pd.DataFrame:
+        return pd.DataFrame(map(operator.methodcaller("to_api_repr"), self._t.schema))
+
+    @property
+    def head(self) -> pd.DataFrame:
+        return self.get_head()
+
+    def get_head(self, bq_exe: str = "bq"):
+        cmd = f'{bq_exe} head --format=json {self._table_name.replace(".", ":", 1)}'
+        ec, out = os.getstatusoutput(cmd)
+        assert ec == 0, (cmd, ec, out)
+        return pd.DataFrame(json.loads(out))
+
+    def __str__(self):
+        pass
+
+    def _repl_html_(self):
+        pass
 
     @property
     def table_name(self) -> str:
