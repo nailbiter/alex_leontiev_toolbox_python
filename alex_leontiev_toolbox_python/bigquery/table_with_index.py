@@ -89,7 +89,7 @@ class TableWithIndex:
         return f"""{self.__class__.__name__}(table_name=`{self.table_name}`, index={self.index}, size={b})"""
 
     def __repr__(self):
-        return self._repl_html_()
+        return str(self)
 
     def _repl_html_(self):
         return f"<tt>{str(self)}</tt>"
