@@ -24,7 +24,7 @@ from alex_leontiev_toolbox_python.utils import format_bytes
 import pandas as pd
 import operator
 import functools
-import os
+import subprocess
 import json
 
 
@@ -76,7 +76,7 @@ class TableWithIndex:
 
     def get_head(self, bq_exe: str = "bq"):
         cmd = f'{bq_exe} head --format=json {self._table_name.replace(".", ":", 1)}'
-        ec, out = os.getstatusoutput(cmd)
+        ec, out = subprocess.getstatusoutput(cmd)
         assert ec == 0, (cmd, ec, out)
         return pd.DataFrame(json.loads(out))
 
