@@ -61,7 +61,9 @@ class TableWithIndex:
 
     @functools.cached_property
     def num_bytes(self):
-        return self._t.num_bytes if self._bytes_size is None else self._bytes_size
+        res = self._t.num_bytes if self._bytes_size is None else self._bytes_size
+        self._logger.warning(res)
+        return res
 
     @property
     def schema(self) -> pd.DataFrame:
