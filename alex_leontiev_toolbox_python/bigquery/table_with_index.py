@@ -20,6 +20,7 @@ ORGANIZATION:
 import typing
 import logging
 from google.cloud import bigquery
+from alex_leontiev_toolbox_python.utils import format_bytes
 import pandas as pd
 import operator
 import functools
@@ -36,6 +37,8 @@ class TableWithIndex:
         _is_skip: bool = False,
         bytes_size: typing.Optional[int] = None,
         bq_client_kwargs: dict = {},
+        ## default=100G
+        size_limit: typing.Optional[int] = 100 * 2 ** (3 * 10),
     ):
         index = tuple(sorted(set(index)))
         assert len(index) > 0, index
@@ -46,12 +49,19 @@ class TableWithIndex:
         schema = {s.name for s in t.schema}
         assert set(index) <= set(schema), (index, schema)
 
+        self._bytes_size = bytes_size
+        if size_limit is not None:
+            assert self.num_bytes <= size_limit, (self.num_bytes, size_limit)
+
         if not _is_skip:
             assert is_superkey(table_name, index), (table_name, index)
         self._table_name = table_name
         self._index = index
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._bytes_size = bytes_size
+
+    @functools.cached_property
+    def num_bytes(self):
+        return self._t.num_bytes if self._bytes_size is None else self._bytes_size
 
     @property
     def schema(self) -> pd.DataFrame:
@@ -71,10 +81,11 @@ class TableWithIndex:
         return pd.DataFrame(json.loads(out))
 
     def __str__(self):
-        pass
+        b = format_bytes(self.num_bytes)
+        return f"""{self.__class__.__name__}(table_name={self.table_name}, index={self.index}, size={b})"""
 
     def _repl_html_(self):
-        pass
+        return f"<tt>{str(self)}</tt>"
 
     @property
     def table_name(self) -> str:
