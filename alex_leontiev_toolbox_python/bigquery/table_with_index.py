@@ -63,7 +63,7 @@ class TableWithIndex:
     @functools.cached_property
     def num_bytes(self):
         res = self._t.num_bytes if self._bytes_size is None else self._bytes_size
-        self._logger.warning(res)
+        # self._logger.warning(f"num_bytes: {res}")
         return res
 
     @property
@@ -85,7 +85,7 @@ class TableWithIndex:
 
     def __str__(self):
         b = format_bytes(self.num_bytes)
-        self._logger.warning(b)
+        # self._logger.warning(f"__str__: {b}")
         return f"""{self.__class__.__name__}(table_name=`{self.table_name}`, index={self.index}, size={b})"""
 
     def _repl_html_(self):
@@ -137,6 +137,3 @@ class TableWithIndex:
         )
         res["is_key"] = res["name"].isin(self.index)
         return res
-
-    def __str__(self):
-        return f"{self.__class__.__name__}(table_name={self.table_name}, index={self.index})"
