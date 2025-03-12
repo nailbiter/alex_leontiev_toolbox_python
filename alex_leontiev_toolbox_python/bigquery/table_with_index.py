@@ -43,6 +43,8 @@ class TableWithIndex:
         index = tuple(sorted(set(index)))
         assert len(index) > 0, index
 
+        self._logger = logging.getLogger(self.__class__.__name__)
+
         bq_client = bigquery.Client(**bq_client_kwargs)
         t = bq_client.get_table(table_name)
         self._t = t
@@ -57,7 +59,6 @@ class TableWithIndex:
             assert is_superkey(table_name, index), (table_name, index)
         self._table_name = table_name
         self._index = index
-        self._logger = logging.getLogger(self.__class__.__name__)
 
     @functools.cached_property
     def num_bytes(self):
