@@ -82,7 +82,8 @@ class TableWithIndex:
 
     def __str__(self):
         b = format_bytes(self.num_bytes)
-        return f"""{self.__class__.__name__}(table_name={self.table_name}, index={self.index}, size={b})"""
+        self._logger.warning(b)
+        return f"""{self.__class__.__name__}(table_name=`{self.table_name}`, index={self.index}, size={b})"""
 
     def _repl_html_(self):
         return f"<tt>{str(self)}</tt>"
