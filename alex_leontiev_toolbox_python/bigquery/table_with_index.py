@@ -34,7 +34,7 @@ class TableWithIndex:
         table_name: str,
         index: list[str],
         is_superkey: typing.Optional[typing.Callable] = None,
-        _is_skip: bool = False,
+        is_skip: bool = False,
         bytes_size: typing.Optional[int] = None,
         bq_client_kwargs: dict = {},
         ## default=100G
@@ -48,15 +48,16 @@ class TableWithIndex:
         bq_client = bigquery.Client(**bq_client_kwargs)
         t = bq_client.get_table(table_name)
         self._t = t
-        schema = {s.name for s in t.schema}
+        schema = set(self.schema["name"])
         assert set(index) <= set(schema), (index, schema)
 
         self._bytes_size = bytes_size
-        if size_limit is not None:
-            assert self.num_bytes <= size_limit, (self.num_bytes, size_limit)
 
-        if not _is_skip:
+        if not is_skip:
+            if size_limit is not None:
+                assert self.num_bytes <= size_limit, (self.num_bytes, size_limit)
             assert is_superkey(table_name, index), (table_name, index)
+
         self._table_name = table_name
         self._index = index
 
@@ -66,12 +67,15 @@ class TableWithIndex:
         # self._logger.warning(f"num_bytes: {res}")
         return res
 
-    @property
+    @functools.cached_property
     def schema(self) -> pd.DataFrame:
         return self.get_schema()
 
     def get_schema(self) -> pd.DataFrame:
-        return pd.DataFrame(map(operator.methodcaller("to_api_repr"), self._t.schema))
+        res = pd.DataFrame(map(operator.methodcaller("to_api_repr"), self._t.schema))
+        res["is_primary"] = res["name"].isin(list(self.index))
+        res.sort_values(by=["is_primary", "name"], ascending=[False, True])
+        return res
 
     @property
     def head(self) -> pd.DataFrame:
@@ -124,7 +128,7 @@ class TableWithIndex:
         return TableWithIndex(
             tn,
             self.index if result_key is None else result_key,
-            _is_skip=(not is_force_verify)
+            is_skip=(not is_force_verify)
             and (join_key is None)
             and (result_key is None),
         )
