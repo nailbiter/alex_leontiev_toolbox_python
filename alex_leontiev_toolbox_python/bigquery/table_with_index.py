@@ -73,7 +73,9 @@ class TableWithIndex:
     def get_schema(self) -> pd.DataFrame:
         res = pd.DataFrame(map(operator.methodcaller("to_api_repr"), self._t.schema))
         res["is_primary"] = res["name"].isin(list(self.index))
-        res.sort_values(by=["is_primary", "name"], ascending=[False, True])
+        res.sort_values(
+            by=["is_primary", "name"], ascending=[False, True], inplace=True
+        )
         return res
 
     @property
