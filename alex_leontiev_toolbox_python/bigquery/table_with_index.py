@@ -44,6 +44,8 @@ class TableWithIndex:
         assert len(index) > 0, index
 
         self._logger = logging.getLogger(self.__class__.__name__)
+        self._table_name = table_name
+        self._index = index
 
         bq_client = bigquery.Client(**bq_client_kwargs)
         t = bq_client.get_table(table_name)
@@ -57,9 +59,6 @@ class TableWithIndex:
             if size_limit is not None:
                 assert self.num_bytes <= size_limit, (self.num_bytes, size_limit)
             assert is_superkey(table_name, index), (table_name, index)
-
-        self._table_name = table_name
-        self._index = index
 
     @functools.cached_property
     def num_bytes(self):
