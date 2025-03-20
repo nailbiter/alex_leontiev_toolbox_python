@@ -129,6 +129,7 @@ class TableWithIndex:
 
     @functools.lru_cache
     def __getitem__(self, key: str):
+        assert key in self.schema["name"].to_list()
         return _BigQuerySeries(self, key)
 
     def __str__(self):
