@@ -37,8 +37,11 @@ class _BigQuerySeries:
     def nunique(self) -> int:
         df = self._parent._fetch_df(
             f"""
-        select count(distinct {self._column_name}) cnt
-        from `{self._parent._table_name}`
+            with t as (
+              select distinct {self._column_name} x
+              from `{self._parent._table_name}`
+            )
+            select count(1) as n from t
         """
         )
         return df.iloc[0, 0]
@@ -50,7 +53,7 @@ class _BigQuerySeries:
         """
         df = self._parent._fetch_df(
             f"""
-        select {self._column_name}, count(1) cnt
+        select {self._column_name} x, count(1) cnt
         from `{self._parent._table_name}`
         group by 1
         order by 2 desc
@@ -129,7 +132,7 @@ class TableWithIndex:
 
     @functools.lru_cache
     def __getitem__(self, key: str):
-        assert key in self.schema["name"].to_list()
+        # assert key in self.schema["name"].to_list()
         return _BigQuerySeries(self, key)
 
     def __str__(self):
