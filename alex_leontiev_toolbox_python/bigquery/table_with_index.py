@@ -28,6 +28,37 @@ import subprocess
 import json
 
 
+class _BigQuerySeries:
+    def __init__(self, parent, column_name: str):
+        self._parent = parent
+        self._column_name = column_name
+
+    @functools.cached_property
+    def nunique(self) -> int:
+        df = self._parent._fetch_df(
+            f"""
+        select count(distinct {self._column_name}) cnt
+        from `{self._parent._table_name}`
+        """
+        )
+        return df.iloc[0, 0]
+
+    @functools.cached_property
+    def value_counts(self) -> pd.Series:
+        """
+        FIXME: add limit on cardinality
+        """
+        df = self._parent._fetch_df(
+            f"""
+        select {self._column_name}, count(1) cnt
+        from `{self._parent._table_name}`
+        group by 1
+        order by 2 desc
+        """
+        )
+        return df["cnt"]
+
+
 class TableWithIndex:
     def __init__(
         self,
@@ -39,6 +70,7 @@ class TableWithIndex:
         bq_client_kwargs: dict = {},
         ## default=100G
         size_limit: typing.Optional[int] = 100 * 2 ** (3 * 10),
+        fetch_df: typing.Optional[typing.Callable] = None,
     ):
         index = tuple(sorted(set(index)))
         assert len(index) > 0, index
@@ -46,6 +78,8 @@ class TableWithIndex:
         self._logger = logging.getLogger(self.__class__.__name__)
         self._table_name = table_name
         self._index = index
+        self._fetch_df = fetch_df
+        self._size_limit = size_limit
 
         bq_client = bigquery.Client(**bq_client_kwargs)
         t = bq_client.get_table(table_name)
@@ -78,7 +112,12 @@ class TableWithIndex:
         )
         return res
 
-    @property
+    @functools.cached_property
+    def df(self) -> pd.DataFrame:
+        assert self.num_bytes <= self._size_limit, (self.num_bytes, self._size_limit)
+        return self._fetch_df(f"select * from `{self._table_name}`")
+
+    @functools.cached_property
     def head(self) -> pd.DataFrame:
         return self.get_head()
 
@@ -87,6 +126,10 @@ class TableWithIndex:
         ec, out = subprocess.getstatusoutput(cmd)
         assert ec == 0, (cmd, ec, out)
         return pd.DataFrame(json.loads(out))
+
+    @functools.lru_cache
+    def __getitem__(self, key: str):
+        return _BigQuerySeries(self, key)
 
     def __str__(self):
         b = format_bytes(self.num_bytes)
