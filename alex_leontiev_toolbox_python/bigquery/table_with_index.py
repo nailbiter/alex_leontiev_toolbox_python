@@ -97,13 +97,16 @@ class TableWithIndex:
             self._table_name = to_table(table_name)
             table_name = self._table_name
 
+        bq_client = bigquery.Client(**bq_client_kwargs)
+
         self._index = index
         self._fetch_df = (
-            lambda sql: fetch(to_table(sql)) if fetch_df is None else fetch_df
+            lambda sql: bq_client.query(sql).to_dataframe()
+            if fetch_df is None
+            else fetch_df
         )
         self._size_limit = size_limit
 
-        bq_client = bigquery.Client(**bq_client_kwargs)
         t = bq_client.get_table(table_name)
         self._t = t
         schema = set(self.schema["name"])
