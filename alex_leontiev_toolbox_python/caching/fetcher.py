@@ -40,6 +40,7 @@ class Fetcher:
         download_limit_gb=1,
         to_dataframe_kwargs={"progress_bar_type": "tqdm"},
         post_call_callbacks=[],
+        is_loud: bool = True,
     ):
         if bq_client is None:
             bq_client = bigquery.Client()
@@ -50,6 +51,7 @@ class Fetcher:
             future=True,
         )
         self._db_prefix = db_prefix
+        self._is_loud = is_loud
         self._logger = logging.getLogger(self.__class__.__name__)
         self._download_limit_gb = download_limit_gb
         self._quota_used_bytes = 0
@@ -64,6 +66,19 @@ class Fetcher:
         if post_process is not None:
             db_table = f"{db_table}_{post_process}"
         return db_table
+
+    def _warning(self, *args, **kwargs):
+        return self._log(*args, method="warning", **kwargs)
+
+    def _error(self, *args, **kwargs):
+        return self._log(*args, method="error", **kwargs)
+
+    def _log(self, *args, method="warning", **kwargs):
+        if self._is_loud:
+            if method == "warning":
+                return self._logger.warning(*args, **kwargs)
+            elif method == "error":
+                return self._logger.error(*args, **kwargs)
 
     def __call__(
         self,
@@ -82,7 +97,7 @@ class Fetcher:
             and use_query_cache
         ):
             d["is_executed"] = False
-            self._logger.warning(f'fetching "{table_name}" from cache')
+            self._warning(f'fetching "{table_name}" from cache')
         else:
             d["is_executed"] = True
             num_bytes = self._bq_client.get_table(table_name).num_bytes

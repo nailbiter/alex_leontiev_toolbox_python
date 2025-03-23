@@ -104,7 +104,7 @@ class TableWithIndex:
 
         self._index = index
         self._fetch_df = (
-            lambda sql: bq_client.query(sql).to_dataframe()
+            (lambda sql: bq_client.query(sql).to_dataframe())
             if fetch_df is None
             else fetch_df
         )

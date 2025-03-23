@@ -62,6 +62,7 @@ class ToTabler:
         is_create_dataset_if_not_exists=True,
         wait_after_dataframe_upload_seconds=2,
         sql_hash_algo="simple",
+        is_loud: bool = True,
     ):
         if bq_client is None:
             bq_client = bigquery.Client()
@@ -70,6 +71,7 @@ class ToTabler:
         self._wait_after_dataframe_upload_seconds = wait_after_dataframe_upload_seconds
 
         self._assume_sync = assume_sync
+        self._is_loud = is_loud
 
         assert 2 <= len(prefix.split(".")) <= 3, prefix
         if len(prefix.split(".")) == 2:
@@ -99,6 +101,19 @@ class ToTabler:
 
         self._recompute_tables_cache()
 
+    def _warning(self, *args, **kwargs):
+        return self._log(*args, method="warning", **kwargs)
+
+    def _error(self, *args, **kwargs):
+        return self._log(*args, method="error", **kwargs)
+
+    def _log(self, *args, method="warning", **kwargs):
+        if self._is_loud:
+            if method == "warning":
+                return self._warning(*args, **kwargs)
+            elif method == "error":
+                return self._error(*args, **kwargs)
+
     def _recompute_tables_cache(self):
         if self._assume_sync:
             self._tables_cache = set(
@@ -108,7 +123,7 @@ class ToTabler:
                     is_include_prefix=True,
                 )
             )
-            self._logger.warning(f"{len(self._tables_cache)} tables recycled")
+            self._warning(f"{len(self._tables_cache)} tables recycled")
         else:
             self._tables_cache = set()
 
@@ -173,15 +188,13 @@ class ToTabler:
                 rendered_sql, self._client
             )
         except Exception:
-            self._logger.error(
-                alex_leontiev_toolbox_python.utils.number_lines(rendered_sql)
-            )
+            self._error(alex_leontiev_toolbox_python.utils.number_lines(rendered_sql))
             raise
 
         job = None
         if self._table_exists(table_name) and use_query_cache:
             is_executed = False
-            self._logger.warning(f"table `{table_name}` exists ==> not recreate")
+            self._warning(f"table `{table_name}` exists ==> not recreate")
         else:
             is_executed = True
             self._tables_cache.add(table_name)
@@ -190,7 +203,7 @@ class ToTabler:
                 job.result()
                 self._quota_used_bytes += used_bytes
             else:
-                self._logger.warning("dry_run")
+                self._warning("dry_run")
 
         r = {
             "sql": sql,
@@ -241,7 +254,7 @@ class ToTabler:
             assert alex_leontiev_toolbox_python.utils.is_pandas_superkey(df, superkey)
             df = df.sort_values(by=superkey)
         else:
-            self._logger.warning(
+            self._warning(
                 "uploading without superkey ==> hash will depend on row order"
             )
         m = hashlib.md5()
@@ -256,7 +269,7 @@ class ToTabler:
         assert self._is_valid_table_name(table_name)
         if self._table_exists(table_name) and use_query_cache:
             debug_info["is_executed"] = False
-            self._logger.warning(f"table `{table_name}` exists ==> not recreate")
+            self._warning(f"table `{table_name}` exists ==> not recreate")
         else:
             debug_info["is_executed"] = True
             if not dry_run:
@@ -270,8 +283,8 @@ class ToTabler:
                     else load_job_config,
                 )
                 self._tables_cache.add(table_name)
-                self._logger.warning(f'creating table "{table_name}"')
+                self._warning(f'creating table "{table_name}"')
             else:
-                self._logger.warning("dry_run")
+                self._warning("dry_run")
             time.sleep(wait_after_dataframe_upload_seconds)
         return (table_name, debug_info) if is_return_debug_info else table_name
