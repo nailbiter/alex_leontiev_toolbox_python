@@ -33,7 +33,6 @@ class _BigQuerySeries:
         self._parent = parent
         self._column_name = column_name
 
-    @functools.cached_property
     def nunique(self) -> int:
         df = self._parent._fetch_df(
             f"""
@@ -46,7 +45,6 @@ class _BigQuerySeries:
         )
         return df.iloc[0, 0]
 
-    @functools.cached_property
     def value_counts(self) -> pd.Series:
         """
         FIXME: add limit on cardinality
@@ -62,6 +60,13 @@ class _BigQuerySeries:
         return df["cnt"]
 
 
+def _table_name_or_query(s: str) -> str:
+    if " " in s:
+        return "query"
+    else:
+        return "table_name"
+
+
 class TableWithIndex:
     def __init__(
         self,
@@ -74,12 +79,21 @@ class TableWithIndex:
         ## default=100G
         size_limit: typing.Optional[int] = 100 * 2 ** (3 * 10),
         fetch_df: typing.Optional[typing.Callable] = None,
+        to_table: typing.Optional[typing.Callable] = None,
+        is_table_name: typing.Optional[bool] = None,
     ):
         index = tuple(sorted(set(index)))
         assert len(index) > 0, index
 
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._table_name = table_name
+        self._table_name = (
+            table_name
+            if (
+                ((is_table_name is not None) and is_table_name)
+                or _table_name_or_query(table_name) == "table_name"
+            )
+            else to_table(table_name)
+        )
         self._index = index
         self._fetch_df = fetch_df
         self._size_limit = size_limit
@@ -96,6 +110,8 @@ class TableWithIndex:
             if size_limit is not None:
                 assert self.num_bytes <= size_limit, (self.num_bytes, size_limit)
             assert is_superkey(table_name, index), (table_name, index)
+
+        self._head = None
 
     @functools.cached_property
     def num_bytes(self):
@@ -120,15 +136,28 @@ class TableWithIndex:
         assert self.num_bytes <= self._size_limit, (self.num_bytes, self._size_limit)
         return self._fetch_df(f"select * from `{self._table_name}`")
 
-    @functools.cached_property
     def head(self) -> pd.DataFrame:
-        return self.get_head()
+        self._head = self.get_head()
+        return self._head
 
-    def get_head(self, bq_exe: str = "bq"):
-        cmd = f'{bq_exe} head --format=json {self._table_name.replace(".", ":", 1)}'
-        ec, out = subprocess.getstatusoutput(cmd)
-        assert ec == 0, (cmd, ec, out)
-        return pd.DataFrame(json.loads(out))
+    def get_head(
+        self, bq_exe: str = "bq", method="bq", limit: int = 100
+    ) -> pd.DataFrame:
+        if method == "bq":
+            cmd = f'{bq_exe} head --format=json {self._table_name.replace(".", ":", 1)}'
+            ec, out = subprocess.getstatusoutput(cmd)
+            assert ec == 0, (cmd, ec, out)
+            res = pd.DataFrame(json.loads(out))
+        elif method == "bigquery":
+            bq_client = bigquery.Client()
+            res = bq_client.query(
+                f"select * from {self.table_name} limit {limit}"
+            ).to_dataframe()
+        else:
+            raise NotImplementedError(dict(method=method))
+
+        self._head = res
+        return res
 
     @functools.lru_cache
     def __getitem__(self, key: str):
