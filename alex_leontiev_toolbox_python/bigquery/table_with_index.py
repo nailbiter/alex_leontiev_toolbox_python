@@ -58,7 +58,7 @@ class _BigQuerySeries:
         order by 2 desc
         """
         )
-        df.rename(columns={"x": self._column_name})
+        df.rename(columns={"x": self._column_name}, inplace=True)
         return df.set_index("x")["cnt"]
 
 
