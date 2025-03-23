@@ -60,10 +60,7 @@ class _BigQuerySeries:
         )
         if self._is_column:
             df.rename(columns={"x": self._column_name}, inplace=True)
-
-        return df.set_index(
-            self._column_name if self._is_column else "x", inplace=True
-        )["cnt"]
+        return df.set_index(self._column_name if self._is_column else "x")["cnt"]
 
 
 def _table_name_or_query(s: str) -> str:
