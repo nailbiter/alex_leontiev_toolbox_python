@@ -29,9 +29,10 @@ import json
 
 
 class _BigQuerySeries:
-    def __init__(self, parent, column_name: str):
+    def __init__(self, parent, column_name: str, is_column: bool = False):
         self._parent = parent
         self._column_name = column_name
+        self._is_column = is_column
 
     def nunique(self) -> int:
         df = self._parent._fetch_df(
@@ -57,6 +58,7 @@ class _BigQuerySeries:
         order by 2 desc
         """
         )
+        df.rename(columns={"x": self._column_name})
         return df.set_index("x")["cnt"]
 
 
@@ -169,8 +171,12 @@ class TableWithIndex:
 
     @functools.lru_cache
     def __getitem__(self, key: str):
-        # assert key in self.schema["name"].to_list()
-        return _BigQuerySeries(self, key)
+        # assert
+        return _BigQuerySeries(
+            self,
+            key,
+            is_column=key.lower() in self.schema["name"].str.lower().to_list(),
+        )
 
     def __str__(self):
         b = format_bytes(self.num_bytes)
