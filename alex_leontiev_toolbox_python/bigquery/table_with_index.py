@@ -86,14 +86,16 @@ class TableWithIndex:
         assert len(index) > 0, index
 
         self._logger = logging.getLogger(self.__class__.__name__)
-        self._table_name = (
-            table_name
-            if (
-                ((is_table_name is not None) and is_table_name)
-                or _table_name_or_query(table_name) == "table_name"
-            )
-            else to_table(table_name)
+
+        is_table_name = ((is_table_name is not None) and is_table_name) or (
+            _table_name_or_query(table_name) == "table_name"
         )
+        if is_table_name:
+            self._table_name = table_name
+        else:
+            self._query = table_name
+            self._table_name = to_table(table_name)
+
         self._index = index
         self._fetch_df = fetch_df
         self._size_limit = size_limit
