@@ -57,7 +57,7 @@ class _BigQuerySeries:
         order by 2 desc
         """
         )
-        return df["cnt"]
+        return df.set_index("x")["cnt"]
 
 
 def _table_name_or_query(s: str) -> str:
