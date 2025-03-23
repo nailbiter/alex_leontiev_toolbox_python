@@ -95,6 +95,7 @@ class TableWithIndex:
         else:
             self._query = table_name
             self._table_name = to_table(table_name)
+            table_name=self._table_name
 
         self._index = index
         self._fetch_df = fetch_df
