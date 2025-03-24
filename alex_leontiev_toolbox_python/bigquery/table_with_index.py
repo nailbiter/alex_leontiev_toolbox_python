@@ -85,6 +85,7 @@ class TableWithIndex:
         fetch: typing.Optional[typing.Callable] = None,
         to_table: typing.Optional[typing.Callable] = None,
         is_table_name: typing.Optional[bool] = None,
+        description: typing.Optional[str] = None,
     ):
         index = tuple(sorted(set(index)))
         assert len(index) > 0, index
@@ -125,6 +126,19 @@ class TableWithIndex:
             assert is_superkey(table_name, index), (table_name, index)
 
         self._head = None
+        self._description = description
+
+    @property
+    def sql(self):
+        return (
+            "\n".join(
+                []
+                if self._description is None
+                else [f"--{l}" for l in self._description.split("\n")]
+            )
+            + f"-- {self._index}"
+            + f"`{self.table_name}`"
+        )
 
     @functools.cached_property
     def num_bytes(self):
