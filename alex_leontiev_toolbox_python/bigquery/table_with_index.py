@@ -147,7 +147,7 @@ class TableWithIndex:
     @functools.cached_property
     def df(self) -> pd.DataFrame:
         assert self.num_bytes <= self._size_limit, (self.num_bytes, self._size_limit)
-        return self.fetch(self._table_name)
+        return self._fetch(self._table_name)
 
     @property
     def head(self) -> pd.DataFrame:
