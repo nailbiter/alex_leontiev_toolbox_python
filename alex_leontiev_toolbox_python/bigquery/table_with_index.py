@@ -82,6 +82,7 @@ class TableWithIndex:
         ## default=100G
         size_limit: typing.Optional[int] = 100 * 2 ** (3 * 10),
         fetch_df: typing.Optional[typing.Callable] = None,
+        fetch: typing.Optional[typing.Callable] = None,
         to_table: typing.Optional[typing.Callable] = None,
         is_table_name: typing.Optional[bool] = None,
     ):
@@ -108,6 +109,7 @@ class TableWithIndex:
             if fetch_df is None
             else fetch_df
         )
+        self._fetch = fetch
         self._size_limit = size_limit
 
         t = bq_client.get_table(table_name)
@@ -145,7 +147,7 @@ class TableWithIndex:
     @functools.cached_property
     def df(self) -> pd.DataFrame:
         assert self.num_bytes <= self._size_limit, (self.num_bytes, self._size_limit)
-        return self._fetch_df(f"select * from `{self._table_name}`")
+        return self.fetch(self._table_name)
 
     @property
     def head(self) -> pd.DataFrame:
