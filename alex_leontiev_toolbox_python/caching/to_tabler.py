@@ -110,9 +110,9 @@ class ToTabler:
     def _log(self, *args, method="warning", **kwargs):
         if self._is_loud:
             if method == "warning":
-                return self._warning(*args, **kwargs)
+                return self._logger.warning(*args, **kwargs)
             elif method == "error":
-                return self._error(*args, **kwargs)
+                return self._logger.error(*args, **kwargs)
 
     def _recompute_tables_cache(self):
         if self._assume_sync:

@@ -147,8 +147,10 @@ class TableWithIndex:
         assert self.num_bytes <= self._size_limit, (self.num_bytes, self._size_limit)
         return self._fetch_df(f"select * from `{self._table_name}`")
 
+    @property
     def head(self) -> pd.DataFrame:
-        self._head = self.get_head()
+        if self._head is None:
+            self.get_head()
         return self._head
 
     def get_head(
