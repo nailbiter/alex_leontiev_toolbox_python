@@ -137,7 +137,7 @@ class TableWithIndex:
                     if self._description is None
                     else [f"--{l}" for l in self._description.split("\n")]
                 ),
-                f"-- {self._index}",
+                f"-- primary key: {self._index}",
                 f"`{self.table_name}`",
             ]
         )
