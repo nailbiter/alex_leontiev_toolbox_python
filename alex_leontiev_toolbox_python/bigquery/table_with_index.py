@@ -70,7 +70,7 @@ class _BigQuerySeries:
                     max({{cn}}) ma,
                   from `{{tn}}`
               ) cross join (
-                select 
+                select distinct
                   {% for p in percentiles -%}
                     percentile_cont({{cn}}, {{p}}) over () p{{loop.index0}},
                   {% endfor -%}
