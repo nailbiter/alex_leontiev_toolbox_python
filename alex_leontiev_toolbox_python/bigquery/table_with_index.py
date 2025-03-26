@@ -76,7 +76,6 @@ class _BigQuerySeries:
                   {% endfor -%}
                 from `{{tn}}`
               ) 
-            from `{{tn}}`
             """
             ).render(
                 tn=self._parent._table_name,
