@@ -26,6 +26,7 @@ import operator
 import functools
 import subprocess
 import json
+from jinja2 import Template
 
 
 class _BigQuerySeries:
@@ -286,6 +287,9 @@ class TableWithIndex:
             and (join_key is None)
             and (result_key is None),
         )
+
+    def dimensions(self) -> pd.DataFrame:
+        pass
 
     @functools.cached_property
     def schema_df(self) -> pd.DataFrame:
