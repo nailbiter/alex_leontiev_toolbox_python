@@ -53,14 +53,29 @@ class _BigQuerySeries:
         df = self._parent._fetch_df(
             Template(
                 """
-            select distinct
-                count(1) count,
-                avg({{cn}}) mean,
-                min({{cn}}) min,
-                {% for p in percentiles -%}
-                percentile_cont({{cn}}, {{p}}) over () p{{loop.index0}},
-                {% endfor -%}
-                max({{cn}}) max,
+            select * from (
+                select count,
+                  mean,
+                  --std
+                  min,
+                  {% for p in percentiles -%}
+                    p{{loop.index0}},
+                  {% endfor -%}
+                  max,
+                
+                from (
+                  count(1) count,
+                  avg({{cn}}) mean,
+                  min({{cn}}) min,
+                  max({{cn}}) max,
+                from `{{tn}}`
+              ) cross join (
+                select 
+                  {% for p in percentiles -%}
+                    percentile_cont({{cn}}, {{p}}) over () p{{loop.index0}},
+                  {% endfor -%}
+                from `{{tn}}`
+              ) 
             from `{{tn}}`
             """
             ).render(
