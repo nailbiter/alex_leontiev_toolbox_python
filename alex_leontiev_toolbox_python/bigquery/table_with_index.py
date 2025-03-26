@@ -46,6 +46,35 @@ class _BigQuerySeries:
         )
         return df.iloc[0, 0]
 
+    def describe(
+        self, percentiles: list[typing.Union[str, float]] = ["0.25", "0.5", "0.75"]
+    ) -> pd.Series:
+        df = self._parent._fetch_df(
+            Template(
+                """
+            select distinct
+                count(1) count,
+                avg({{cn}}) mean,
+                min({{cn}}) min,
+                {% for p in percentiles -%}
+                percentile_cont({{cn}}, {{p}}) p{{loop.index0}},
+                {% endfor -%}
+                max({{cn}}) max,
+            from `{{tn}}`
+            """
+            ).render(
+                tn=self._parent._table_name,
+                cn=self._column_name,
+                percentiles=percentiles,
+            )
+        )
+        df.rename(
+            columns={f"p{i}": f"{float(x)*100:.2f}%" for i, x in enumerate(percentiles)}
+        )
+        (r,) = df.to_dict(orient="records")
+        s = pd.Series(r)
+        return s
+
     def value_counts(self) -> pd.Series:
         """
         FIXME: add limit on cardinality
@@ -129,6 +158,17 @@ class TableWithIndex:
         self._description = description
 
     @property
+    def query(self) -> typing.Optional[str]:
+        return self._query if self.is_from_query else None
+
+    @property
+    def is_from_query(self) -> bool:
+        return hasattr(self, "_query")
+
+    def items(self) -> list:
+        return [(cn, self[cn]) for cn in self.schema["name"]]
+
+    @property
     def sql(self):
         return "\n".join(
             [
@@ -163,7 +203,9 @@ class TableWithIndex:
     @functools.cached_property
     def df(self) -> pd.DataFrame:
         assert self.num_bytes <= self._size_limit, (self.num_bytes, self._size_limit)
-        return self._fetch(self._table_name)
+        df_res = self._fetch(self._table_name)
+        df_res.set_index(list(self.index), inplace=True)
+        return df_res
 
     @property
     def head(self) -> pd.DataFrame:
