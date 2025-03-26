@@ -89,7 +89,8 @@ class _BigQuerySeries:
                 "mi": "min",
                 "ma": "max",
                 "cnt": "count",
-            }
+            },
+            inplace=True,
         )
         (r,) = df.to_dict(orient="records")
         s = pd.Series(r)
