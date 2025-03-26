@@ -63,11 +63,12 @@ class _BigQuerySeries:
                   ma,
                 
                 from (
-                  count(1) cnt,
-                  avg({{cn}}) mean,
-                  min({{cn}}) mi,
-                  max({{cn}}) ma,
-                from `{{tn}}`
+                  select
+                    count(1) cnt,
+                    avg({{cn}}) mean,
+                    min({{cn}}) mi,
+                    max({{cn}}) ma,
+                  from `{{tn}}`
               ) cross join (
                 select 
                   {% for p in percentiles -%}
