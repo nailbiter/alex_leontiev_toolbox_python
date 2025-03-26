@@ -53,21 +53,20 @@ class _BigQuerySeries:
         df = self._parent._fetch_df(
             Template(
                 """
-            select * from (
-                select count,
+                select cnt,
                   mean,
                   --std
-                  min,
+                  mi,
                   {% for p in percentiles -%}
                     p{{loop.index0}},
                   {% endfor -%}
-                  max,
+                  ma,
                 
                 from (
-                  count(1) count,
+                  count(1) cnt,
                   avg({{cn}}) mean,
-                  min({{cn}}) min,
-                  max({{cn}}) max,
+                  min({{cn}}) mi,
+                  max({{cn}}) ma,
                 from `{{tn}}`
               ) cross join (
                 select 
@@ -84,7 +83,12 @@ class _BigQuerySeries:
             )
         )
         df.rename(
-            columns={f"p{i}": f"{float(x)*100:.2f}%" for i, x in enumerate(percentiles)}
+            columns={
+                **{f"p{i}": f"{float(x)*100:.2f}%" for i, x in enumerate(percentiles)},
+                "mi": "min",
+                "ma": "max",
+                "cnt": "count",
+            }
         )
         (r,) = df.to_dict(orient="records")
         s = pd.Series(r)
