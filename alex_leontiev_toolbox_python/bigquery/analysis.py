@@ -34,25 +34,25 @@ import functools
 _DEFAULT_TABLE_ALIASES = ("tn1", "tn2")
 
 
-class IndexedTable:
-    def __init__(table_name: str, superkey: list[str], fetch_to_table: typing.Tuple):
-        self._table_name = table_name
-        self._superkey = superkey
-        self._fetch_to_table = fetch_to_table
+# class IndexedTable:
+#     def __init__(table_name: str, superkey: list[str], fetch_to_table: typing.Tuple):
+#         self._table_name = table_name
+#         self._superkey = superkey
+#         self._fetch_to_table = fetch_to_table
 
-        fetch, to_table = fetch_to_table
-        assert is_superkey(table_name, superkey, fetch=fetch, to_table=to_table)
+#         fetch, to_table = fetch_to_table
+#         assert is_superkey(table_name, superkey, fetch=fetch, to_table=to_table)
 
-    @property
-    def table_name(self):
-        return self._table_name
+#     @property
+#     def table_name(self):
+#         return self._table_name
 
-    @property
-    def superkey(self):
-        return self._superkey
+#     @property
+#     def superkey(self):
+#         return self._superkey
 
-    def to_dict(self) -> dict:
-        return dict(table_name=self.table_name, superkey=self.superkey)
+#     def to_dict(self) -> dict:
+#         return dict(table_name=self.table_name, superkey=self.superkey)
 
 
 def schema_to_df(
@@ -390,14 +390,14 @@ def is_tables_equal(
 
 
 def is_fields_are_dependent(
-    table_name,
-    fields_x,
-    fields_y,
-    fetch=None,
-    to_table=None,
-    is_return_debug_info=False,
-    is_normalize_keys=True,
-    is_generate_reduction=False,
+    table_name: str,
+    fields_x: list[str],
+    fields_y: list[str],
+    fetch: typing.Optional[typing.Callable] = None,
+    to_table: typing.Optional[typing.Callable] = None,
+    is_return_debug_info: bool = False,
+    is_normalize_keys: bool = True,
+    is_generate_reduction: bool = False,
 ):
     if fetch is None:
         fetch = Fetcher()
@@ -424,6 +424,19 @@ def is_fields_are_dependent(
     res, d["is_superkey_debug_info"] = is_superkey(
         tn, fields_x, to_table=to_table, fetch=fetch, is_return_debug_info=True
     )
+    if is_generate_reduction:
+        d["tn_reduction"] = to_table(
+            Template(
+                """
+        select {{ fields_x|join(",") }},
+                {% for cn in fields_y -%}
+                any_value({{ cn }}) {{ cn }},
+                {% endfor -%}
+        from `{{ table_name }}`
+        group by  {{ fields_x|join(",") }}
+        """
+            ).render(table_name=table_name, fields_x=fields_x, fields_y=fields_y)
+        )
     return (res, d) if is_return_debug_info else res
 
 
@@ -541,3 +554,12 @@ def is_nonull(
 
     res = (df["null_perc"] == 0).all()
     return (res, d) if is_return_debug_info else res
+
+
+ANALYSIS_TOOLKIT: dict = dict(
+    is_nonull=is_nonull,
+    is_superkey=is_superkey,
+    field_coverage_stats=field_coverage_stats,
+    is_fields_are_dependent=is_fields_are_dependent,
+    is_tables_equal=is_tables_equal,
+)
