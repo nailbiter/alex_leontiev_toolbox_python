@@ -58,7 +58,7 @@ class _BigQuerySeries:
                 avg({{cn}}) mean,
                 min({{cn}}) min,
                 {% for p in percentiles -%}
-                percentile_cont({{cn}}, {{p}}) p{{loop.index0}},
+                percentile_cont({{cn}}, {{p}}) over () p{{loop.index0}},
                 {% endfor -%}
                 max({{cn}}) max,
             from `{{tn}}`
