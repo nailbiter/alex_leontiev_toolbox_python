@@ -33,7 +33,11 @@ class _BigQuerySeries:
     def __init__(self, parent, column_name: str, is_column: bool = False):
         self._parent = parent
         self._column_name = column_name
-        self._is_column = is_column
+        self._is_column: bool = is_column
+
+    @property
+    def is_column(self) -> bool:
+        return self._is_column
 
     def nunique(self) -> int:
         df = self._parent._fetch_df(
@@ -47,12 +51,21 @@ class _BigQuerySeries:
         )
         return df.iloc[0, 0]
 
+    @property
+    def type(self) -> typing.Optional[str]:
+        if self.is_column:
+            (res,) = self._parent.schema.loc[
+                self._parent.schema["name"].eq(self._column_name), "type"
+            ]
+            return res
+
     def describe(
-        self, percentiles: list[typing.Union[str, float]] = ["0.25", "0.5", "0.75"]
-    ) -> pd.Series:
-        df = self._parent._fetch_df(
-            Template(
-                """
+        self,
+        percentiles: list[typing.Union[str, float]] = ["0.25", "0.5", "0.75"],
+        dry_run: bool = False,
+    ) -> typing.Union[pd.Series, str]:
+        sql = Template(
+            """
                 select cnt,
                   mean,
                   --std
@@ -65,24 +78,34 @@ class _BigQuerySeries:
                 from (
                   select
                     count(1) cnt,
+                    {% if type=='STRING' %}
+                    count(distinct {{cn}}) cd,
+                    {% else -%}
                     avg({{cn}}) mean,
+                    {% endif -%}
                     min({{cn}}) mi,
                     max({{cn}}) ma,
                   from `{{tn}}`
-              ) cross join (
+              )
+                {% if (percentiles|length)>0 -%}
+                cross join (
                 select distinct
                   {% for p in percentiles -%}
                     percentile_cont({{cn}}, {{p}}) over () p{{loop.index0}},
                   {% endfor -%}
                 from `{{tn}}`
+               {% endif %}
               ) 
             """
-            ).render(
-                tn=self._parent._table_name,
-                cn=self._column_name,
-                percentiles=percentiles,
-            )
+        ).render(
+            tn=self._parent._table_name,
+            cn=self._column_name,
+            type=self.type,
+            percentiles=[] if self.type == "STRING" else percentiles,
         )
+        if dry_run:
+            return sql
+        df = self._parent._fetch_df(sql)
         df.rename(
             columns={
                 **{f"p{i}": f"{float(x)*100:.2f}%" for i, x in enumerate(percentiles)},
@@ -118,6 +141,9 @@ def _table_name_or_query(s: str) -> str:
         return "query"
     else:
         return "table_name"
+
+
+_ANALYSIS_HOOKS = ["fetch_df", "fetch", "to_table"]
 
 
 class TableWithIndex:
@@ -193,6 +219,7 @@ class TableWithIndex:
     def sql(self):
         return "\n".join(
             [
+                "",
                 *(
                     []
                     if self._description is None
@@ -298,18 +325,18 @@ class TableWithIndex:
           {join_sql} `{right.table_name}`
           using ({','.join(join_key)})
         """
-        self._logger.warning(sql)
-        tn = to_table(sql)
         return TableWithIndex(
-            tn,
+            sql,
             self.index if result_key is None else result_key,
             is_skip=(not is_force_verify)
             and (join_key is None)
             and (result_key is None),
+            description=f"join of {self} and `{right}` on {join_key} and {result_key}"
+            ** {k: getattr(self, f"_{k}") for k in _ANALYSIS_HOOKS},
         )
 
     def dimensions(self) -> pd.DataFrame:
-        pass
+        raise NotImplementedError()
 
     @functools.cached_property
     def schema_df(self) -> pd.DataFrame:
@@ -322,3 +349,35 @@ class TableWithIndex:
         )
         res["is_key"] = res["name"].isin(self.index)
         return res
+
+    def slice(self):
+        raise NotImplementedError()
+
+    def where(self):
+        raise NotImplementedError()
+
+    def sample(n: typing.Optional[int] = None, frac: typing.Optional[float] = None):
+        if n is not None:
+            sql = f"""
+            with t as (select *, random() r123456 from `{self.table_name}`)
+            select * except (r123456)
+            from t
+            order by r123456
+            limit {n}
+            """
+        elif frac is not None:
+            sql = f"""
+            with t as (select *, random() r123456 from `{self.table_name}`)
+            select * except (r123456)
+            from t
+            where r123456<{frac}
+            """
+        else:
+            raise NotImplementedError()
+        return TableWithIndex(
+            sql,
+            self.index,
+            is_skip=True,
+            description=f"sample of {self} with n={n} and frac={frac}"
+            ** {k: getattr(self, f"_{k}") for k in _ANALYSIS_HOOKS},
+        )
