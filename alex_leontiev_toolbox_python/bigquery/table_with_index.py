@@ -356,7 +356,11 @@ class TableWithIndex:
     def where(self):
         raise NotImplementedError()
 
-    def sample(n: typing.Optional[int] = None, frac: typing.Optional[float] = None):
+    def sample(
+        n: typing.Optional[int] = None,
+        frac: typing.Optional[float] = None,
+        dry_run: bool = False,
+    ):
         if n is not None:
             sql = f"""
             with t as (select *, random() r123456 from `{self.table_name}`)
@@ -374,10 +378,13 @@ class TableWithIndex:
             """
         else:
             raise NotImplementedError()
-        return TableWithIndex(
-            sql,
-            self.index,
-            is_skip=True,
-            description=f"sample of {self} with n={n} and frac={frac}"
-            ** {k: getattr(self, f"_{k}") for k in _ANALYSIS_HOOKS},
-        )
+        if dry_run:
+            return sql
+        else:
+            return TableWithIndex(
+                sql,
+                self.index,
+                is_skip=True,
+                description=f"sample of {self} with n={n} and frac={frac}"
+                ** {k: getattr(self, f"_{k}") for k in _ANALYSIS_HOOKS},
+            )
