@@ -51,6 +51,16 @@ class _BigQuerySeries:
         )
         return df.iloc[0, 0]
 
+    def unique(self) -> list:
+        df = self._parent._fetch_df(
+            f"""
+              select distinct {self._column_name} x
+              from `{self._parent._table_name}`
+            order by 1
+        """
+        )
+        return df["x"].to_list()
+
     @property
     def type(self) -> typing.Optional[str]:
         if self.is_column:
@@ -357,24 +367,26 @@ class TableWithIndex:
         raise NotImplementedError()
 
     def sample(
+        self,
         n: typing.Optional[int] = None,
         frac: typing.Optional[float] = None,
         dry_run: bool = False,
+        random_field_name: str = "r123456",
     ):
         if n is not None:
             sql = f"""
-            with t as (select *, random() r123456 from `{self.table_name}`)
-            select * except (r123456)
+            with t as (select *, random() {random_field_name} from `{self.table_name}`)
+            select * except ({random_field_name})
             from t
-            order by r123456
+            order by {random_field_name}
             limit {n}
             """
         elif frac is not None:
             sql = f"""
-            with t as (select *, random() r123456 from `{self.table_name}`)
-            select * except (r123456)
+            with t as (select *, random() {random_field_name} from `{self.table_name}`)
+            select * except ({random_field_name})
             from t
-            where r123456<{frac}
+            where {random_field_name}<{frac}
             """
         else:
             raise NotImplementedError()
