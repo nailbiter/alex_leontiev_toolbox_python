@@ -153,7 +153,7 @@ def _table_name_or_query(s: str) -> str:
         return "table_name"
 
 
-_ANALYSIS_HOOKS = ["fetch_df", "fetch", "to_table"]
+_ANALYSIS_HOOKS = ["fetch_df", "fetch", "to_table", "is_superkey"]
 
 
 class TableWithIndex:
@@ -360,7 +360,7 @@ class TableWithIndex:
         res["is_key"] = res["name"].isin(self.index)
         return res
 
-    def slice(self):
+    def slice(self, is_force_verify: bool = False, **kwargs):
         raise NotImplementedError()
 
     def where(self):
@@ -400,3 +400,23 @@ class TableWithIndex:
                 description=f"sample of {self} with n={n} and frac={frac}"
                 ** {k: getattr(self, f"_{k}") for k in _ANALYSIS_HOOKS},
             )
+
+
+@functools.singledispatch
+def to_sql(x) -> str:
+    return x
+
+
+@to_sql.register
+def _(x: str) -> str:
+    return f'"""{x}"""'
+
+
+@functools.singledispatch
+def to_list(x) -> list:
+    return [x]
+
+
+@to_list.register
+def _(x: list) -> list:
+    return x

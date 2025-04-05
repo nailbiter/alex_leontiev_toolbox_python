@@ -19,11 +19,17 @@ ORGANIZATION:
 ==============================================================================="""
 import logging
 import unittest
-from alex_leontiev_toolbox_python.bigquery.table_with_index import TableWithIndex
+from alex_leontiev_toolbox_python.bigquery.table_with_index import (
+    TableWithIndex,
+    to_sql,
+    to_list,
+)
 
 
 def test_table_with_index():
-    assert True
+    assert to_sql(3) == "3"
+    assert to_sql(True) == "True"
+    assert to_sql("x") == '"""x"""'
 
 
 # class TestBigqueryTableWithIndex(unittest.TestCase):
