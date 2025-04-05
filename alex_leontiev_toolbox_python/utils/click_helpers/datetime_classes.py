@@ -202,6 +202,7 @@ def parse_cmdline_datetime(
     fail_callback: typing.Optional[typing.Callable] = None,
     now: typing.Optional[datetime] = None,
     strptime_regexps: list[typing.Tuple[str, str]] = DEFAULT_STRPTIME_REGEXPS,
+    is_loud: bool = False,
 ) -> typing.Optional[datetime]:
     now = datetime.now() if now is None else now
     try:
@@ -232,15 +233,17 @@ def parse_cmdline_datetime(
             for regex, strptime_expression in strptime_regexps:
                 m = re.match(regex, s)
                 if m is not None:
-                    res = datetime.strptime(strptime_expression)
+                    res = datetime.strptime(s, strptime_expression)
                     break
             if res is None:
                 raise NotImplementedError(f'cannot parse parse_cmdline_datetime "{s}"')
         return date_to_grid(res)
-    except Exception:
+    except Exception as e:
+        if is_loud:
+            logging.warning(e)
         if fail_callback is not None:
             fail_callback(f"cannot parse {s}")
-        raise
+        raise e
 
 
 @functools.singledispatch

@@ -9,7 +9,7 @@
      OPTIONS: ---
 REQUIREMENTS: ---
         BUGS: ---
-       NOTES: ---
+       NOTES: #noinfra
       AUTHOR: Alex Leontiev (alozz1991@gmail.com)
 ORGANIZATION: 
      VERSION: ---
@@ -32,6 +32,7 @@ def test_parse_cmdline_datetime():
     assert parse_cmdline_datetime("tomorrow", now=now) == datetime(2025, 2, 27)
     assert parse_cmdline_datetime("next mon", now=now) == datetime(2025, 3, 3)
     assert parse_cmdline_datetime("last mon", now=now) == datetime(2025, 2, 24)
+    assert parse_cmdline_datetime("2025-08-10", now=now) == datetime(2025, 8, 10)
 
 
 # class TestUtilsDatetimeClasses(unittest.TestCase):
