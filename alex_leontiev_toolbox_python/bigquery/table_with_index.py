@@ -21,6 +21,7 @@ import typing
 import logging
 from google.cloud import bigquery
 from alex_leontiev_toolbox_python.utils import format_bytes
+from alex_leontiev_toolbox_python.bigquery import query_bytes
 import pandas as pd
 import operator
 import functools
@@ -189,6 +190,7 @@ class TableWithIndex:
             table_name = self._table_name
 
         bq_client = bigquery.Client(**bq_client_kwargs)
+        self._bq_client = bigquery.Client()
 
         self._index = index
         self._fetch_df = (
@@ -208,7 +210,12 @@ class TableWithIndex:
 
         if not is_skip:
             if size_limit is not None:
-                assert self.num_bytes <= size_limit, (self.num_bytes, size_limit)
+                # num_bytes = (
+                #     query_bytes(self._query) if self.is_from_query else self.num_bytes
+                # )
+                # FIXME: more correct computation with to_table's templates
+                num_bytes = self.num_bytes
+                assert num_bytes <= size_limit, (num_bytes, size_limit)
             assert is_superkey(table_name, index), (table_name, index)
 
         self._head = None
@@ -377,6 +384,10 @@ class TableWithIndex:
             index=list(set(self.index) - set(kwargs)),
             **{k: getattr(self, f"_{k}") for k in _ANALYSIS_HOOKS},
         )
+
+    @property
+    def t(self):
+        return self._t
 
     def where(self):
         raise NotImplementedError()
