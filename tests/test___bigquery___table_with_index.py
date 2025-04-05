@@ -26,10 +26,21 @@ from alex_leontiev_toolbox_python.bigquery.table_with_index import (
 )
 
 
-def test_table_with_index():
+def test_basic():
     assert to_sql(3) == "3"
     assert to_sql(True) == "True"
     assert to_sql("x") == '"""x"""'
+
+    assert to_list([1, 2, 3]) == [1, 2, 3]
+    assert to_list(1) == [1]
+    assert to_list(["x"]) == ["x"]
+
+
+def test_slice():
+    try:
+        pass
+    finally:
+        pass
 
 
 # class TestBigqueryTableWithIndex(unittest.TestCase):

@@ -360,8 +360,23 @@ class TableWithIndex:
         res["is_key"] = res["name"].isin(self.index)
         return res
 
-    def slice(self, is_force_verify: bool = False, **kwargs):
-        raise NotImplementedError()
+    def slice(self, is_force_verify: bool = False, **kwargs) -> TableWithIndex:
+        assert len(kwargs) > 0
+        kwargs = {k: to_list(v) for k, v in kwargs.items()}
+        return TableWithIndex(
+            Template(
+                """
+                select *
+                from {{ self.sql }}
+                where
+                  {% for k,v in kwargs.items() -%}
+                  {{k}} in ({%for vv in v %}{{to_sql(v)}}{{"," if not loop.last}}{% endfor %})
+                  {% endfor -%}
+            """
+            ).render(self=self, kwargs=kwargs, to_sql=to_sql),
+            index=list(set(self.index) - set(kwargs)),
+            **{k: getattr(self, f"_{k}") for k in _ANALYSIS_HOOKS},
+        )
 
     def where(self):
         raise NotImplementedError()
@@ -404,7 +419,7 @@ class TableWithIndex:
 
 @functools.singledispatch
 def to_sql(x) -> str:
-    return x
+    return str(x)
 
 
 @to_sql.register
