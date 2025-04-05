@@ -381,7 +381,7 @@ class TableWithIndex:
                   {% endfor -%}
             """
             ).render(self=self, kwargs=kwargs, to_sql=to_sql),
-            index=list(set(self.index) - set(kwargs)),
+            index=list(set(self.index) - {k for k, v in kwargs.items() if len(v) == 1}),
             **{k: getattr(self, f"_{k}") for k in _ANALYSIS_HOOKS},
         )
 
