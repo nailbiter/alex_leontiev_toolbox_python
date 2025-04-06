@@ -76,6 +76,23 @@ def _original_field_name(fields):
     pass
 
 
+_IS_SUPERKEY_KEYS_NO_NULL_TPL = Template(
+    """select
+  {% for cn in candidate_superkey -%}
+  countif({{ cn }} is null) {{cn}},
+  {% endfor -%}
+from `{{ table_name }}`"""
+)
+
+_IS_SUPERKEY_IS_SUPERKEY_TPL = Template(
+    """select {{candidate_superkey|join(",")}}, count(1) {{cnt_fn}},
+from `{{table_name}}`
+group by {{candidate_superkey|join(",")}}
+having {{cnt_fn}}>1
+"""
+)
+
+
 def is_superkey(
     table_name: str,
     candidate_superkey: list[str],
@@ -112,26 +129,13 @@ def is_superkey(
     if is_verify_keys_are_not_null:
         (d_null,) = fetch(
             to_table(
-                Template(
-                    """
-        select
-          {% for cn in candidate_superkey -%}
-          countif({{ cn }} is null) {{cn}},
-          {% endfor -%}
-        from `{{ table_name }}`
-        """
-                ).render(table_name=table_name, candidate_superkey=candidate_superkey)
+                _IS_SUPERKEY_KEYS_NO_NULL_TPL.render(
+                    table_name=table_name, candidate_superkey=candidate_superkey
+                )
             )
         ).to_dict(orient="records")
         assert pd.Series(d_null).max() == 0, d_null
-    d["rendered_sql"] = Template(
-        """
-        select {{candidate_superkey|join(",")}}, count(1) {{cnt_fn}},
-        from `{{table_name}}`
-        group by {{candidate_superkey|join(",")}}
-        having {{cnt_fn}}>1
-    """
-    ).render(
+    d["rendered_sql"] = _IS_SUPERKEY_IS_SUPERKEY_TPL.render(
         {
             "candidate_superkey": candidate_superkey,
             "table_name": table_name,

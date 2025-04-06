@@ -22,6 +22,10 @@ import logging
 from google.cloud import bigquery
 from alex_leontiev_toolbox_python.utils import format_bytes
 from alex_leontiev_toolbox_python.bigquery import query_bytes
+from alex_leontiev_toolbox_python.bigquery.analysis import (
+    _IS_SUPERKEY_KEYS_NO_NULL_TPL,
+    _IS_SUPERKEY_IS_SUPERKEY_TPL,
+)
 import pandas as pd
 import operator
 import functools
@@ -199,6 +203,8 @@ class TableWithIndex:
             else fetch_df
         )
         self._fetch = fetch
+        self._to_table = to_table
+        self._is_superkey = is_superkey
         self._size_limit = size_limit
 
         t = bq_client.get_table(table_name)
@@ -214,7 +220,15 @@ class TableWithIndex:
                 #     query_bytes(self._query) if self.is_from_query else self.num_bytes
                 # )
                 # FIXME: more correct computation with to_table's templates
-                num_bytes = self.num_bytes
+                num_bytes = query_bytes(
+                    _IS_SUPERKEY_KEYS_NO_NULL_TPL.render(
+                        table_name=table_name, candidate_superkey=index
+                    )
+                ) + query_bytes(
+                    _IS_SUPERKEY_IS_SUPERKEY_TPL.render(
+                        table_name=table_name, candidate_superkey=index, cnt_fn="cnt"
+                    )
+                )
                 assert num_bytes <= size_limit, (num_bytes, size_limit)
             assert is_superkey(table_name, index), (table_name, index)
 
@@ -367,22 +381,52 @@ class TableWithIndex:
         res["is_key"] = res["name"].isin(self.index)
         return res
 
-    def slice(self, is_force_verify: bool = False, **kwargs) -> TableWithIndex:
+    def slice(
+        self,
+        is_force_verify: bool = False,
+        is_exclude_sliced_cols: bool = True,
+        **kwargs,
+    ):
         assert len(kwargs) > 0
         kwargs = {k: to_list(v) for k, v in kwargs.items()}
+        sliced_cols = [k for k, v in kwargs.items() if len(v) == 1]
+        self._logger.warning(dict(kwargs=kwargs, sliced_cols=sliced_cols))
         return TableWithIndex(
             Template(
                 """
                 select *
-                from {{ self.sql }}
+                  {% if is_exclude_sliced_cols and (sliced_cols|length)>0 -%}
+                    except ({{ sliced_cols|join(",") }})
+                  {% endif -%}
+                from {{ self_.sql }}
                 where
                   {% for k,v in kwargs.items() -%}
-                  {{k}} in ({%for vv in v %}{{to_sql(v)}}{{"," if not loop.last}}{% endfor %})
+                    (
+                      {{k}}
+                      {% if (v|length)==1 -%}
+                        ={{ to_sql(v[0]) }}
+                      {% else -%}
+                        in (
+                          {% for vv in v -%}
+                            {{ to_sql(vv) }}
+                            {{ "," if not loop.last }}
+                          {% endfor -%}
+                        )
+                      {% endif -%}
+                    )
+                    {{ "and" if not loop.last }}
                   {% endfor -%}
             """
-            ).render(self=self, kwargs=kwargs, to_sql=to_sql),
-            index=list(set(self.index) - {k for k, v in kwargs.items() if len(v) == 1}),
+            ).render(
+                self_=self,
+                kwargs=kwargs,
+                to_sql=to_sql,
+                sliced_cols=sliced_cols,
+                is_exclude_sliced_cols=is_exclude_sliced_cols,
+            ),
+            index=list(set(self.index) - set(sliced_cols)),
             **{k: getattr(self, f"_{k}") for k in _ANALYSIS_HOOKS},
+            is_skip=(not is_force_verify),
         )
 
     @property
@@ -398,10 +442,11 @@ class TableWithIndex:
         frac: typing.Optional[float] = None,
         dry_run: bool = False,
         random_field_name: str = "r123456",
+        is_force_verify: bool = False,
     ):
         if n is not None:
             sql = f"""
-            with t as (select *, random() {random_field_name} from `{self.table_name}`)
+            with t as (select *, rand() {random_field_name} from `{self.table_name}`)
             select * except ({random_field_name})
             from t
             order by {random_field_name}
@@ -409,7 +454,7 @@ class TableWithIndex:
             """
         elif frac is not None:
             sql = f"""
-            with t as (select *, random() {random_field_name} from `{self.table_name}`)
+            with t as (select *, rand() {random_field_name} from `{self.table_name}`)
             select * except ({random_field_name})
             from t
             where {random_field_name}<{frac}
@@ -422,9 +467,9 @@ class TableWithIndex:
             return TableWithIndex(
                 sql,
                 self.index,
-                is_skip=True,
-                description=f"sample of {self} with n={n} and frac={frac}"
-                ** {k: getattr(self, f"_{k}") for k in _ANALYSIS_HOOKS},
+                is_skip=not is_force_verify,
+                description=f"sample of {self} with n={n} and frac={frac}",
+                **{k: getattr(self, f"_{k}") for k in _ANALYSIS_HOOKS},
             )
 
 
