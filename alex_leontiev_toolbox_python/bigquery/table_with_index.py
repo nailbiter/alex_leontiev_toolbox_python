@@ -279,10 +279,15 @@ class TableWithIndex:
         )
         return res
 
+    def _materialize(self, method="fetch"):
+        assert self.num_bytes <= self._size_limit, (self.num_bytes, self._size_limit)
+        self._df = self._fetch(self._table_name)
+
     @functools.cached_property
     def df(self) -> pd.DataFrame:
-        assert self.num_bytes <= self._size_limit, (self.num_bytes, self._size_limit)
-        df_res = self._fetch(self._table_name)
+        if self._df is None:
+            self._materialize()
+        df_res = self._df.copy()
         df_res.set_index(list(self.index), inplace=True)
         return df_res
 
