@@ -200,7 +200,11 @@ class ToTabler:
             self._tables_cache.add(table_name)
             if not dry_run:
                 job = self._client.query(rendered_sql, **query_kwargs)
-                job.result()
+                try:
+                    job.result()
+                except Exception:
+                    self._error(rendered_sql)
+                    raise
                 self._quota_used_bytes += used_bytes
             else:
                 self._warning("dry_run")

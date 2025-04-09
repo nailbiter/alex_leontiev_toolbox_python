@@ -21,6 +21,11 @@ import typing
 import logging
 from google.cloud import bigquery
 from alex_leontiev_toolbox_python.utils import format_bytes
+from alex_leontiev_toolbox_python.bigquery import query_bytes
+from alex_leontiev_toolbox_python.bigquery.analysis import (
+    _IS_SUPERKEY_KEYS_NO_NULL_TPL,
+    _IS_SUPERKEY_IS_SUPERKEY_TPL,
+)
 import pandas as pd
 import operator
 import functools
@@ -33,7 +38,11 @@ class _BigQuerySeries:
     def __init__(self, parent, column_name: str, is_column: bool = False):
         self._parent = parent
         self._column_name = column_name
-        self._is_column = is_column
+        self._is_column: bool = is_column
+
+    @property
+    def is_column(self) -> bool:
+        return self._is_column
 
     def nunique(self) -> int:
         df = self._parent._fetch_df(
@@ -47,12 +56,31 @@ class _BigQuerySeries:
         )
         return df.iloc[0, 0]
 
-    def describe(
-        self, percentiles: list[typing.Union[str, float]] = ["0.25", "0.5", "0.75"]
-    ) -> pd.Series:
+    def unique(self) -> list:
         df = self._parent._fetch_df(
-            Template(
-                """
+            f"""
+              select distinct {self._column_name} x
+              from `{self._parent._table_name}`
+            order by 1
+        """
+        )
+        return df["x"].to_list()
+
+    @property
+    def type(self) -> typing.Optional[str]:
+        if self.is_column:
+            (res,) = self._parent.schema.loc[
+                self._parent.schema["name"].eq(self._column_name), "type"
+            ]
+            return res
+
+    def describe(
+        self,
+        percentiles: list[typing.Union[str, float]] = ["0.25", "0.5", "0.75"],
+        dry_run: bool = False,
+    ) -> typing.Union[pd.Series, str]:
+        sql = Template(
+            """
                 select cnt,
                   mean,
                   --std
@@ -65,24 +93,34 @@ class _BigQuerySeries:
                 from (
                   select
                     count(1) cnt,
+                    {% if type=='STRING' %}
+                    count(distinct {{cn}}) cd,
+                    {% else -%}
                     avg({{cn}}) mean,
+                    {% endif -%}
                     min({{cn}}) mi,
                     max({{cn}}) ma,
                   from `{{tn}}`
-              ) cross join (
+              )
+                {% if (percentiles|length)>0 -%}
+                cross join (
                 select distinct
                   {% for p in percentiles -%}
                     percentile_cont({{cn}}, {{p}}) over () p{{loop.index0}},
                   {% endfor -%}
                 from `{{tn}}`
+               {% endif %}
               ) 
             """
-            ).render(
-                tn=self._parent._table_name,
-                cn=self._column_name,
-                percentiles=percentiles,
-            )
+        ).render(
+            tn=self._parent._table_name,
+            cn=self._column_name,
+            type=self.type,
+            percentiles=[] if self.type == "STRING" else percentiles,
         )
+        if dry_run:
+            return sql
+        df = self._parent._fetch_df(sql)
         df.rename(
             columns={
                 **{f"p{i}": f"{float(x)*100:.2f}%" for i, x in enumerate(percentiles)},
@@ -120,6 +158,9 @@ def _table_name_or_query(s: str) -> str:
         return "table_name"
 
 
+_ANALYSIS_HOOKS = ["fetch_df", "fetch", "to_table", "is_superkey"]
+
+
 class TableWithIndex:
     def __init__(
         self,
@@ -153,6 +194,7 @@ class TableWithIndex:
             table_name = self._table_name
 
         bq_client = bigquery.Client(**bq_client_kwargs)
+        self._bq_client = bigquery.Client()
 
         self._index = index
         self._fetch_df = (
@@ -161,6 +203,8 @@ class TableWithIndex:
             else fetch_df
         )
         self._fetch = fetch
+        self._to_table = to_table
+        self._is_superkey = is_superkey
         self._size_limit = size_limit
 
         t = bq_client.get_table(table_name)
@@ -172,7 +216,20 @@ class TableWithIndex:
 
         if not is_skip:
             if size_limit is not None:
-                assert self.num_bytes <= size_limit, (self.num_bytes, size_limit)
+                # num_bytes = (
+                #     query_bytes(self._query) if self.is_from_query else self.num_bytes
+                # )
+                # FIXME: more correct computation with to_table's templates
+                num_bytes = query_bytes(
+                    _IS_SUPERKEY_KEYS_NO_NULL_TPL.render(
+                        table_name=table_name, candidate_superkey=index
+                    )
+                ) + query_bytes(
+                    _IS_SUPERKEY_IS_SUPERKEY_TPL.render(
+                        table_name=table_name, candidate_superkey=index, cnt_fn="cnt"
+                    )
+                )
+                assert num_bytes <= size_limit, (num_bytes, size_limit)
             assert is_superkey(table_name, index), (table_name, index)
 
         self._head = None
@@ -193,6 +250,7 @@ class TableWithIndex:
     def sql(self):
         return "\n".join(
             [
+                "",
                 *(
                     []
                     if self._description is None
@@ -298,18 +356,18 @@ class TableWithIndex:
           {join_sql} `{right.table_name}`
           using ({','.join(join_key)})
         """
-        self._logger.warning(sql)
-        tn = to_table(sql)
         return TableWithIndex(
-            tn,
+            sql,
             self.index if result_key is None else result_key,
             is_skip=(not is_force_verify)
             and (join_key is None)
             and (result_key is None),
+            description=f"join of {self} and `{right}` on {join_key} and {result_key}"
+            ** {k: getattr(self, f"_{k}") for k in _ANALYSIS_HOOKS},
         )
 
     def dimensions(self) -> pd.DataFrame:
-        pass
+        raise NotImplementedError()
 
     @functools.cached_property
     def schema_df(self) -> pd.DataFrame:
@@ -322,3 +380,114 @@ class TableWithIndex:
         )
         res["is_key"] = res["name"].isin(self.index)
         return res
+
+    def slice(
+        self,
+        is_force_verify: bool = False,
+        is_exclude_sliced_cols: bool = True,
+        **kwargs,
+    ):
+        assert len(kwargs) > 0
+        kwargs = {k: to_list(v) for k, v in kwargs.items()}
+        sliced_cols = [k for k, v in kwargs.items() if len(v) == 1]
+        self._logger.warning(dict(kwargs=kwargs, sliced_cols=sliced_cols))
+        return TableWithIndex(
+            Template(
+                """
+                select *
+                  {% if is_exclude_sliced_cols and (sliced_cols|length)>0 -%}
+                    except ({{ sliced_cols|join(",") }})
+                  {% endif -%}
+                from {{ self_.sql }}
+                where
+                  {% for k,v in kwargs.items() -%}
+                    (
+                      {{k}}
+                      {% if (v|length)==1 -%}
+                        ={{ to_sql(v[0]) }}
+                      {% else -%}
+                        in (
+                          {% for vv in v -%}
+                            {{ to_sql(vv) }}
+                            {{ "," if not loop.last }}
+                          {% endfor -%}
+                        )
+                      {% endif -%}
+                    )
+                    {{ "and" if not loop.last }}
+                  {% endfor -%}
+            """
+            ).render(
+                self_=self,
+                kwargs=kwargs,
+                to_sql=to_sql,
+                sliced_cols=sliced_cols,
+                is_exclude_sliced_cols=is_exclude_sliced_cols,
+            ),
+            index=list(set(self.index) - set(sliced_cols)),
+            **{k: getattr(self, f"_{k}") for k in _ANALYSIS_HOOKS},
+            is_skip=(not is_force_verify),
+        )
+
+    @property
+    def t(self):
+        return self._t
+
+    def where(self):
+        raise NotImplementedError()
+
+    def sample(
+        self,
+        n: typing.Optional[int] = None,
+        frac: typing.Optional[float] = None,
+        dry_run: bool = False,
+        random_field_name: str = "r123456",
+        is_force_verify: bool = False,
+    ):
+        if n is not None:
+            sql = f"""
+            with t as (select *, rand() {random_field_name} from `{self.table_name}`)
+            select * except ({random_field_name})
+            from t
+            order by {random_field_name}
+            limit {n}
+            """
+        elif frac is not None:
+            sql = f"""
+            with t as (select *, rand() {random_field_name} from `{self.table_name}`)
+            select * except ({random_field_name})
+            from t
+            where {random_field_name}<{frac}
+            """
+        else:
+            raise NotImplementedError()
+        if dry_run:
+            return sql
+        else:
+            return TableWithIndex(
+                sql,
+                self.index,
+                is_skip=not is_force_verify,
+                description=f"sample of {self} with n={n} and frac={frac}",
+                **{k: getattr(self, f"_{k}") for k in _ANALYSIS_HOOKS},
+            )
+
+
+@functools.singledispatch
+def to_sql(x) -> str:
+    return str(x)
+
+
+@to_sql.register
+def _(x: str) -> str:
+    return f'"""{x}"""'
+
+
+@functools.singledispatch
+def to_list(x) -> list:
+    return [x]
+
+
+@to_list.register
+def _(x: list) -> list:
+    return x
