@@ -97,6 +97,48 @@ def test_basic():
     assert to_list(["x"]) == ["x"]
 
 
+def test_materialize():
+    try:
+        # Example with other location and expiration time.
+        # create_dataset_with_table_expiration(project_id, dataset_id, location='europe-west2', expiration_days=2)
+
+        bq_client = bigquery.Client()
+        tmp_dataset_name = f"""{os.getenv("GCLOUD_PROJECT")}.tmp_dataset_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"""
+        tmp_dataset_name
+        tmp_dataset = create_dataset_with_table_expiration(
+            *tmp_dataset_name.split("."), location="US"
+        )
+        tmp_dataset
+
+        to_table = ToTabler(
+            prefix=f"{tmp_dataset_name}.t_",
+            bq_client=bq_client,
+            assume_sync=True,
+            is_loud=True,
+        )
+        # fetch = Fetcher(bq_client=bq_client, is_loud=True)
+        fetch = PseudoFetcher(bq_client=bq_client, is_loud=True)
+
+        df1 = get_random_frame()
+        tn = to_table.upload_df(df1, ["i1", "i2", "i3"])
+        twi1 = TableWithIndex(
+            tn,
+            ["i1", "i2", "i3"],
+            to_table=to_table,
+            fetch=fetch,
+            is_superkey=functools.partial(is_superkey, fetch=fetch, to_table=to_table),
+            fetch_df=lambda sql: fetch(to_table(sql)),
+        )
+        df = twi1.df
+        assert df.index.names == ["i1", "i2", "i3"]
+        assert len(df) == len(df1)
+        assert set(map(tuple, df.index)) == set(
+            map(tuple, df1[["i1", "i2", "i3"]].values)
+        )
+    finally:
+        bq_client.delete_dataset(tmp_dataset_name, delete_contents=True)
+
+
 def test_slice():
     try:
         # Example with other location and expiration time.

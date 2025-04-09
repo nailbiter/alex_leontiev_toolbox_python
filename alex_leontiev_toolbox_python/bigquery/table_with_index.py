@@ -280,12 +280,25 @@ class TableWithIndex:
         return res
 
     def _materialize(self, method="fetch"):
-        assert self.num_bytes <= self._size_limit, (self.num_bytes, self._size_limit)
-        self._df = self._fetch(self._table_name)
+        if method == "fetch":
+            assert self.num_bytes <= self._size_limit, (
+                self.num_bytes,
+                self._size_limit,
+            )
+            df = self._fetch(self._table_name)
+        elif method == "fetch_df":
+            assert self.num_bytes <= self._size_limit, (
+                self.num_bytes,
+                self._size_limit,
+            )
+            df = self._fetch_df(f"select * from {self._table_name}")
+        else:
+            df = method(self)
+        self._df = df
 
     @functools.cached_property
     def df(self) -> pd.DataFrame:
-        if self._df is None:
+        if (not hasattr(self, "_df")) or (self._df is None):
             self._materialize()
         df_res = self._df.copy()
         df_res.set_index(list(self.index), inplace=True)
