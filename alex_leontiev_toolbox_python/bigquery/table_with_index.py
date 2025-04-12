@@ -261,7 +261,6 @@ class TableWithIndex:
             ]
         )
 
-    @functools.cached_property
     def num_bytes(self):
         res = self._t.num_bytes if self._bytes_size is None else self._bytes_size
         # self._logger.warning(f"num_bytes: {res}")
@@ -296,7 +295,6 @@ class TableWithIndex:
             df = method(self)
         self._df = df
 
-    @functools.cached_property
     def df(self) -> pd.DataFrame:
         if (not hasattr(self, "_df")) or (self._df is None):
             self._materialize()
@@ -386,18 +384,6 @@ class TableWithIndex:
 
     def dimensions(self) -> pd.DataFrame:
         raise NotImplementedError()
-
-    @functools.cached_property
-    def schema_df(self) -> pd.DataFrame:
-        bq_client = bigquery.Client()
-        res = pd.DataFrame(
-            map(
-                operator.methodcaller("to_api_repr"),
-                bq_client.get_table(self.table_name).schema,
-            )
-        )
-        res["is_key"] = res["name"].isin(self.index)
-        return res
 
     def slice(
         self,
