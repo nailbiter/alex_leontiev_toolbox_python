@@ -93,6 +93,11 @@ def test_df_frac():
     assert set(df.columns) == {"x", "cnt"}
     assert np.linalg.norm(dfp["frac(cnt) %"] - np.array([10, 20, 20, 50])) < 1e-10
 
+    dfp = alex_leontiev_toolbox_python.utils.df_frac(df, post_process=lambda _: 1)
+    assert set(dfp.columns) == {"x", "cnt", "frac(cnt) %"}
+    assert set(df.columns) == {"x", "cnt"}
+    assert np.linalg.norm(dfp["frac(cnt) %"] - np.array([1, 1, 1, 1])) < 1e-10
+
     dfp = alex_leontiev_toolbox_python.utils.df_frac(df, frac_field_name="f")
     assert set(dfp.columns) == {"x", "cnt", "f"}
     assert set(df.columns) == {"x", "cnt"}
