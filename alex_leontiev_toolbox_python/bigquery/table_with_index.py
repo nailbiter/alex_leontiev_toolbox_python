@@ -261,6 +261,7 @@ class TableWithIndex:
             ]
         )
 
+    @property
     def num_bytes(self):
         res = self._t.num_bytes if self._bytes_size is None else self._bytes_size
         # self._logger.warning(f"num_bytes: {res}")
@@ -295,6 +296,7 @@ class TableWithIndex:
             df = method(self)
         self._df = df
 
+    @property
     def df(self) -> pd.DataFrame:
         if (not hasattr(self, "_df")) or (self._df is None):
             self._materialize()
