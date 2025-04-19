@@ -261,7 +261,7 @@ class TableWithIndex:
             ]
         )
 
-    @functools.cached_property
+    @property
     def num_bytes(self):
         res = self._t.num_bytes if self._bytes_size is None else self._bytes_size
         # self._logger.warning(f"num_bytes: {res}")
@@ -279,10 +279,28 @@ class TableWithIndex:
         )
         return res
 
-    @functools.cached_property
+    def _materialize(self, method="fetch"):
+        if method == "fetch":
+            assert self.num_bytes <= self._size_limit, (
+                self.num_bytes,
+                self._size_limit,
+            )
+            df = self._fetch(self._table_name)
+        elif method == "fetch_df":
+            assert self.num_bytes <= self._size_limit, (
+                self.num_bytes,
+                self._size_limit,
+            )
+            df = self._fetch_df(f"select * from {self._table_name}")
+        else:
+            df = method(self)
+        self._df = df
+
+    @property
     def df(self) -> pd.DataFrame:
-        assert self.num_bytes <= self._size_limit, (self.num_bytes, self._size_limit)
-        df_res = self._fetch(self._table_name)
+        if (not hasattr(self, "_df")) or (self._df is None):
+            self._materialize()
+        df_res = self._df.copy()
         df_res.set_index(list(self.index), inplace=True)
         return df_res
 
@@ -368,18 +386,6 @@ class TableWithIndex:
 
     def dimensions(self) -> pd.DataFrame:
         raise NotImplementedError()
-
-    @functools.cached_property
-    def schema_df(self) -> pd.DataFrame:
-        bq_client = bigquery.Client()
-        res = pd.DataFrame(
-            map(
-                operator.methodcaller("to_api_repr"),
-                bq_client.get_table(self.table_name).schema,
-            )
-        )
-        res["is_key"] = res["name"].isin(self.index)
-        return res
 
     def slice(
         self,

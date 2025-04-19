@@ -123,8 +123,9 @@ def df_frac(
     is_return_percent=True,
     is_format=False,
     stratification=None,
-    is_inplace=False,
-    is_return_debug_info=False,
+    is_inplace: bool = False,
+    is_return_debug_info: bool = False,
+    post_process: typing.Optional[typing.Callable] = None,
 ):
     """
     1(done). support stratification
@@ -145,13 +146,15 @@ def df_frac(
     else:
         df[frac_field_name] = df[cnt_field_name] / df.groupby(stratification)[
             cnt_field_name
-        ].transform(np.sum)
+        ].transform("sum")
     if is_return_percent:
         df[frac_field_name] *= 100
     if is_format:
         df[frac_field_name] = df[frac_field_name].apply(lambda x: f"{x:.2f}")
         if is_return_percent:
             df[frac_field_name] = df[frac_field_name] + "%"
+    elif post_process is not None:
+        df[frac_field_name] = df[frac_field_name].apply(post_process)
 
     d = {
         "frac_field_name": frac_field_name,
