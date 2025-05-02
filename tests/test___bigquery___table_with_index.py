@@ -23,6 +23,7 @@ from alex_leontiev_toolbox_python.bigquery.table_with_index import (
     TableWithIndex,
     to_sql,
     to_list,
+    to_table_name,
 )
 from alex_leontiev_toolbox_python.bigquery.table_with_index import TableWithIndex
 
@@ -140,26 +141,11 @@ def test_materialize():
 
 
 def test_slice():
+    tmp_dataset_name, bq_client = [None] * 2
     try:
         # Example with other location and expiration time.
         # create_dataset_with_table_expiration(project_id, dataset_id, location='europe-west2', expiration_days=2)
-
-        bq_client = bigquery.Client()
-        tmp_dataset_name = f"""{os.getenv("GCLOUD_PROJECT")}.tmp_dataset_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"""
-        tmp_dataset_name
-        tmp_dataset = create_dataset_with_table_expiration(
-            *tmp_dataset_name.split("."), location="US"
-        )
-        tmp_dataset
-
-        to_table = ToTabler(
-            prefix=f"{tmp_dataset_name}.t_",
-            bq_client=bq_client,
-            assume_sync=True,
-            is_loud=True,
-        )
-        # fetch = Fetcher(bq_client=bq_client, is_loud=True)
-        fetch = PseudoFetcher(bq_client=bq_client, is_loud=True)
+        bq_client, tmp_dataset_name, to_table, fetch = setup()
 
         df1 = get_random_frame()
         tn = to_table.upload_df(df1, ["i1", "i2", "i3"])
@@ -184,7 +170,75 @@ def test_slice():
         assert twi3.t.num_rows == 10
 
     finally:
-        bq_client.delete_dataset(tmp_dataset_name, delete_contents=True)
+        if tmp_dataset_name is not None and bq_client is not None:
+            bq_client.delete_dataset(tmp_dataset_name, delete_contents=True)
+
+
+def setup() -> (bigquery.Client, str, typing.Callable, typing.Callable):
+    bq_client = bigquery.Client()
+    tmp_dataset_name = f"""{os.getenv("GCLOUD_PROJECT")}.tmp_dataset_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}"""
+    tmp_dataset_name
+    tmp_dataset = create_dataset_with_table_expiration(
+        *tmp_dataset_name.split("."), location="US"
+    )
+    tmp_dataset
+
+    to_table = ToTabler(
+        prefix=f"{tmp_dataset_name}.t_",
+        bq_client=bq_client,
+        assume_sync=True,
+        is_loud=True,
+    )
+    # fetch = Fetcher(bq_client=bq_client, is_loud=True)
+    fetch = PseudoFetcher(bq_client=bq_client, is_loud=True)
+    return bq_client, tmp_dataset_name, to_table, fetch
+
+
+def test_to_table_name():
+    assert to_table_name("a.b.c") == "`a.b.c`"
+    assert (
+        to_table_name(
+            TableWithIndex(
+                "bigquery-public-data.samples.gsod",
+                ["station_number", "wban_number"],
+                is_skip=True,
+            )
+        )
+        == ""
+    )
+
+
+def test_join():
+    tmp_dataset_name, bq_client = [None] * 2
+    try:
+        bq_client, tmp_dataset_name, to_table, fetch = setup()
+
+        assert False, "todo"
+        # df1 = get_random_frame()
+        # tn = to_table.upload_df(df1, ["i1", "i2", "i3"])
+        # twi1 = TableWithIndex(
+        #     tn,
+        #     ["i1", "i2", "i3"],
+        #     to_table=to_table,
+        #     fetch=fetch,
+        #     is_superkey=functools.partial(is_superkey, fetch=fetch, to_table=to_table),
+        #     fetch_df=lambda sql: fetch(to_table(sql)),
+        # )
+
+        # assert set(twi1.index) == {"i1", "i2", "i3"}
+        # assert twi1.t.num_rows == 10**3
+
+        # twi2 = twi1.slice(i1=5, i2=[3, 4], is_force_verify=True)
+        # assert set(twi2.index) == {"i2", "i3"}
+        # assert twi2.t.num_rows == 2 * 10**1
+
+        # twi3 = twi1.sample(n=10, is_force_verify=True)
+        # assert set(twi3.index) == {"i1", "i2", "i3"}
+        # assert twi3.t.num_rows == 10
+
+    finally:
+        if tmp_dataset_name is not None and bq_client is not None:
+            bq_client.delete_dataset(tmp_dataset_name, delete_contents=True)
 
 
 def get_random_frame(random_seed: int = 42) -> pd.DataFrame:

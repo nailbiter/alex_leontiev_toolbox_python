@@ -497,3 +497,18 @@ def to_list(x) -> list:
 @to_list.register
 def _(x: list) -> list:
     return x
+
+
+@functools.singledispatch
+def to_table_name(x) -> str:
+    raise NotImplementedError()
+
+
+@to_table_name.register
+def _(x: str) -> str:
+    return f"`{x}`"
+
+
+@to_table_name.register
+def _(x: TableWithIndex) -> str:
+    return x.sql
