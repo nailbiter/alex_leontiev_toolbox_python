@@ -23,19 +23,19 @@ import hashlib
 _SQL_TOKENS_TO_IGNORE = [
     "Token.Text.Whitespace",
     "Token.Text.Whitespace.Newline",
-
     "Token.Comment.Single",
+    "Token.Comment.Multiline",
 ]
 
 
-def sql_to_hash_sqlparse(sql, algo="md5", salt=None):
+def sql_to_hash_sqlparse(
+    sql, algo="md5", salt=None, ttypes_to_ignore: list[str] = _SQL_TOKENS_TO_IGNORE
+):
     m = getattr(hashlib, algo)()
     if salt is not None:
         m.update(str(salt).encode())
     for statement in sqlparse.parse(sql):
         for token in statement.flatten():
-            if str(token.ttype) in _SQL_TOKENS_TO_IGNORE:
-                pass
-            else:
+            if str(token.ttype) not in ttypes_to_ignore:
                 m.update(str(token).encode())
     return m.hexdigest()

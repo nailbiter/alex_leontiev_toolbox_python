@@ -61,7 +61,7 @@ class ToTabler:
         post_call_callbacks=[],
         is_create_dataset_if_not_exists=True,
         wait_after_dataframe_upload_seconds=2,
-        sql_hash_algo="simple",
+        sql_hash_algo: typing.Union[str, typing.Callable] = "simple",
         is_loud: bool = True,
     ):
         if bq_client is None:
@@ -84,7 +84,7 @@ class ToTabler:
         elif sql_hash_algo == "sqlparse":
             self._sql_to_hash = sql_to_hash_sqlparse
         else:
-            raise NotImplementedError(sql_hash_algo)
+            self._sql_to_hash = sql_hash_algo
 
         _dataset = ".".join(prefix.split(".")[:2])
         if is_create_dataset_if_not_exists:

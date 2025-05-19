@@ -19,7 +19,9 @@ ORGANIZATION:
 ==============================================================================="""
 
 import os
-from alex_leontiev_toolbox_python.caching._sql_to_hash_sqlparse import sql_to_hash_sqlparse
+from alex_leontiev_toolbox_python.caching._sql_to_hash_sqlparse import (
+    sql_to_hash_sqlparse,
+)
 
 
 def test_sql_to_hash_sqlparse():
@@ -33,7 +35,15 @@ def test_sql_to_hash_sqlparse():
     sql3 = """
     select 2 as x
     """
-    assert sql_to_hash_sqlparse(
-        sql1) != sql_to_hash_sqlparse(sql2, salt="test")
+    sql4 = """
+    /*
+    multi
+    line
+    comment
+    */
+    select 1 as x
+    """
+    assert sql_to_hash_sqlparse(sql1) != sql_to_hash_sqlparse(sql2, salt="test")
     assert sql_to_hash_sqlparse(sql1) == sql_to_hash_sqlparse(sql2)
+    assert sql_to_hash_sqlparse(sql1) == sql_to_hash_sqlparse(sql4)
     assert sql_to_hash_sqlparse(sql1) != sql_to_hash_sqlparse(sql3)
