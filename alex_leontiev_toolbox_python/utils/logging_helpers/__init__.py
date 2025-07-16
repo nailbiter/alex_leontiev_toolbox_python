@@ -1,0 +1,53 @@
+"""===============================================================================
+
+        FILE: /Users/nailbiter/Documents/forgithub/alex_leontiev_toolbox_python/alex_leontiev_toolbox_python/utils/logging_helpers/__init__.py
+
+       USAGE: (not intended to be directly executed)
+
+ DESCRIPTION: 
+
+     OPTIONS: ---
+REQUIREMENTS: ---
+        BUGS: ---
+       NOTES: adapted from https://gist.github.com/nailbiter/e916b53301ef130a1ef589ac0119d0d4
+      AUTHOR: Alex Leontiev (alozz1991@gmail.com)
+ORGANIZATION: 
+     VERSION: ---
+     CREATED: 2025-07-15T21:15:56.438367
+    REVISION: ---
+
+==============================================================================="""
+import typing
+import logger
+import functools
+
+
+def get_configured_logger(
+    name: str,
+    level: str = "DEBUG",
+    log_format=" - ".join(
+        [f"%({x})s" for x in ["asctime", "name", "levelname", "message"]]
+    ),
+) -> logging.Logger:
+    app_logger = logging.getLogger(name)
+
+    # --- Step 2: Set the logging level for YOUR logger ---
+    # This logger will now process any message of DEBUG severity or higher.
+    app_logger.setLevel(getattr(logging, level))
+
+    # --- Step 3: Create a StreamHandler to output to stderr for YOUR logger ---
+    # This handler will specifically handle messages from 'app_logger'.
+    app_console_handler = logging.StreamHandler(
+        sys.stderr
+    )  # or just logging.StreamHandler()
+    # You can also set a level on the handler if you want it to be more restrictive
+    # than the logger itself, but typically you want it to respect the logger's level.
+    # app_console_handler.setLevel(logging.DEBUG)
+
+    # --- Step 4: Create a Formatter for better message layout (Optional but recommended) ---
+    formatter = logging.Formatter(log_format)
+    app_console_handler.setFormatter(formatter)
+
+    # --- Step 5: Add the configured handler to YOUR logger ---
+    app_logger.addHandler(app_console_handler)
+    return app_logger

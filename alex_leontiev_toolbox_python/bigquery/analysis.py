@@ -23,6 +23,7 @@ from google.cloud import bigquery
 from alex_leontiev_toolbox_python.utils import melt_single_record_df
 from alex_leontiev_toolbox_python.caching.fetcher import Fetcher
 from alex_leontiev_toolbox_python.caching.to_tabler import ToTabler
+from alex_leontiev_toolbox_python.bigquery import schema_to_df
 import inspect
 import types
 from typing import cast
@@ -53,23 +54,6 @@ _DEFAULT_TABLE_ALIASES = ("tn1", "tn2")
 
 #     def to_dict(self) -> dict:
 #         return dict(table_name=self.table_name, superkey=self.superkey)
-
-
-def schema_to_df(
-    table_or_table_name: typing.Union[str, bigquery.Table],
-    bq_client: typing.Optional[bigquery.Client] = None,
-    is_return_comparable_object: bool = False,
-    is_table_name_input: bool = False,
-) -> typing.Union[str, pd.DataFrame]:
-    if (bq_client is None) and is_table_name_input:
-        bq_client = bigquery.Client()
-    table = (
-        bq_client.get_table(table_or_table_name)
-        if is_table_name_input
-        else table_or_table_name
-    )
-    df = pd.DataFrame([sf.to_api_repr() for sf in table.schema])
-    return df.to_string() if is_return_comparable_object else df
 
 
 def _original_field_name(fields):

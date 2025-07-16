@@ -24,6 +24,8 @@ import sqlalchemy
 import pandas as pd
 import logging
 import typing
+from alex_leontiev_toolbox_python.logging_helpers import get_configured_logger
+from alex_leontiev_toolbox_python.bigquery import schema_to_df
 
 _TABLE_NAME_TO_DB_NAME_CONNECTOR = "___"
 _DASH_REPLACE = "__"
@@ -41,6 +43,7 @@ class Fetcher:
         to_dataframe_kwargs={"progress_bar_type": "tqdm"},
         post_call_callbacks=[],
         is_loud: bool = True,
+        schema_converters: dict = {},
     ):
         if bq_client is None:
             bq_client = bigquery.Client()
@@ -52,11 +55,12 @@ class Fetcher:
         )
         self._db_prefix = db_prefix
         self._is_loud = is_loud
-        self._logger = logging.getLogger(self.__class__.__name__)
+        self._logger = get_configured_logger(self.__class__.__name__)
         self._download_limit_gb = download_limit_gb
         self._quota_used_bytes = 0
         self._to_dataframe_kwargs = to_dataframe_kwargs
         self._post_call_callbacks = post_call_callbacks
+        self._schema_converters = schema_converters
 
     def _db_table(self, table_name, post_process: typing.Optional[str]):
         db_table = self._db_prefix + _TABLE_NAME_TO_DB_NAME_CONNECTOR.join(
@@ -105,6 +109,16 @@ class Fetcher:
             df = self._bq_client.query(f"select * from `{table_name}`").to_dataframe(
                 **to_dataframe_kwargs
             )
+            sdf = schema_to_df(table_name)
+            self._logger.info(sdf)
+            for k, f in self._schema_converters.items():
+                if sdf["type"].eq(k).any():
+                    self._logger.debug(f"applying schema convertor `{k}`")
+                    for cn in sdf.loc[sdf["type"].eq(k), "name"]:
+                        self._logger.debug(
+                            f"applying schema convertor `{k}` for column {cn}"
+                        )
+                        df[cn] = df[cn].apply(f)
             if post_process is not None:
                 df = _POST_PROCESSORS[post_process](df)
 
