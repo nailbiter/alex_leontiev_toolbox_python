@@ -24,7 +24,7 @@ import sqlalchemy
 import pandas as pd
 import logging
 import typing
-from alex_leontiev_toolbox_python.logging_helpers import get_configured_logger
+from alex_leontiev_toolbox_python.utils.logging_helpers import get_configured_logger
 from alex_leontiev_toolbox_python.bigquery import schema_to_df
 
 _TABLE_NAME_TO_DB_NAME_CONNECTOR = "___"
@@ -74,6 +74,12 @@ class Fetcher:
     def _warning(self, *args, **kwargs):
         return self._log(*args, method="warning", **kwargs)
 
+    def _debug(self, *args, **kwargs):
+        return self._log(*args, method="debug", **kwargs)
+
+    def _info(self, *args, **kwargs):
+        return self._log(*args, method="info", **kwargs)
+
     def _error(self, *args, **kwargs):
         return self._log(*args, method="error", **kwargs)
 
@@ -101,7 +107,7 @@ class Fetcher:
             and use_query_cache
         ):
             d["is_executed"] = False
-            self._warning(f'fetching "{table_name}" from cache')
+            self._debug(f'fetching "{table_name}" from cache')
         else:
             d["is_executed"] = True
             num_bytes = self._bq_client.get_table(table_name).num_bytes
@@ -109,7 +115,7 @@ class Fetcher:
             df = self._bq_client.query(f"select * from `{table_name}`").to_dataframe(
                 **to_dataframe_kwargs
             )
-            sdf = schema_to_df(table_name)
+            sdf = schema_to_df(table_name, is_table_name_input=True)
             self._logger.info(sdf)
             for k, f in self._schema_converters.items():
                 if sdf["type"].eq(k).any():

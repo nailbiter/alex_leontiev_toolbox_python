@@ -18,16 +18,25 @@ ORGANIZATION:
 
 ==============================================================================="""
 import typing
-import logger
+import logging
 import functools
+import sys
+
+
+@functools.singledispatch
+def make_log_format(x) -> str:
+    raise NotImplementedError(x)
+
+
+@make_log_format.register
+def _(l: list) -> str:
+    return " - ".join([f"%({x})s" for x in l])
 
 
 def get_configured_logger(
     name: str,
     level: str = "DEBUG",
-    log_format=" - ".join(
-        [f"%({x})s" for x in ["asctime", "name", "levelname", "message"]]
-    ),
+    log_format=make_log_format(["asctime", "name", "levelname", "message"]),
 ) -> logging.Logger:
     app_logger = logging.getLogger(name)
 
