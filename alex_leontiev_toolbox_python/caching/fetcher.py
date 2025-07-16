@@ -127,7 +127,7 @@ class Fetcher:
                         self._logger.debug(
                             f"applying schema convertor `{k}` for column {cn}"
                         )
-                        df[cn] = df[cn].apply(f)
+                        df[cn] = f(df[cn])
             if post_process is not None:
                 df = _POST_PROCESSORS[post_process](df)
 
