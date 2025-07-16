@@ -37,12 +37,21 @@ def get_configured_logger(
     name: str,
     level: str = "DEBUG",
     log_format=make_log_format(["asctime", "name", "levelname", "message"]),
+    pre_clean: bool = True,
 ) -> logging.Logger:
     app_logger = logging.getLogger(name)
 
     # --- Step 2: Set the logging level for YOUR logger ---
     # This logger will now process any message of DEBUG severity or higher.
     app_logger.setLevel(getattr(logging, level))
+
+    if pre_clean:
+        # while len(app_logger.handlers) > 0:
+        #     h = app_logger.handlers[0]
+        #     # dbg.debug('removing handler %s'%str(h))
+        #     app_logger.removeHandler(h)
+        #     # dbg.debug('%d more to go'%len(testLogger.handlers))
+        app_logger.handlers.clear()
 
     # --- Step 3: Create a StreamHandler to output to stderr for YOUR logger ---
     # This handler will specifically handle messages from 'app_logger'.

@@ -44,6 +44,7 @@ class Fetcher:
         post_call_callbacks=[],
         is_loud: bool = True,
         schema_converters: dict = {},
+        log_creation_kwargs: dict = {},
     ):
         if bq_client is None:
             bq_client = bigquery.Client()
@@ -55,7 +56,9 @@ class Fetcher:
         )
         self._db_prefix = db_prefix
         self._is_loud = is_loud
-        self._logger = get_configured_logger(self.__class__.__name__)
+        self._logger = get_configured_logger(
+            self.__class__.__name__, level="INFO", **log_creation_kwargs
+        )
         self._download_limit_gb = download_limit_gb
         self._quota_used_bytes = 0
         self._to_dataframe_kwargs = to_dataframe_kwargs
@@ -116,7 +119,7 @@ class Fetcher:
                 **to_dataframe_kwargs
             )
             sdf = schema_to_df(table_name, is_table_name_input=True)
-            self._logger.info(sdf)
+            self._logger.debug(sdf)
             for k, f in self._schema_converters.items():
                 if sdf["type"].eq(k).any():
                     self._logger.debug(f"applying schema convertor `{k}`")
