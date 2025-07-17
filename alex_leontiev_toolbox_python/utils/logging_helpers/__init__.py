@@ -38,9 +38,9 @@ def get_configured_logger(
     level: str = "DEBUG",
     log_format=make_log_format(
         [
-            "asctime",
             "name",
             "levelname",
+            "asctime",
             "message",
         ]
     ),
