@@ -57,7 +57,8 @@ class Fetcher:
         self._db_prefix = db_prefix
         self._is_loud = is_loud
         self._logger = get_configured_logger(
-            self.__class__.__name__, level="INFO", **log_creation_kwargs
+            self.__class__.__name__,
+            **{"level": "INFO", **log_creation_kwargs},
         )
         self._download_limit_gb = download_limit_gb
         self._quota_used_bytes = 0
