@@ -207,14 +207,16 @@ class TableWithIndex:
         self._is_superkey = is_superkey
         self._size_limit = size_limit
 
-        t = bq_client.get_table(table_name)
-        self._t = t
-        schema = set(self.schema["name"])
-        assert set(index) <= set(schema), (index, schema)
+        # actually, it does not speed up the process, for bq_client.get_table takes time
+        # t = bq_client.get_table(table_name)
+        self._t = None
+        # self._t = t
 
         self._bytes_size = bytes_size
 
         if not is_skip:
+            # schema = set(self.schema["name"])
+            # assert set(index) <= set(schema), (index, schema)
             if size_limit is not None:
                 # num_bytes = (
                 #     query_bytes(self._query) if self.is_from_query else self.num_bytes
@@ -272,7 +274,7 @@ class TableWithIndex:
         return self.get_schema()
 
     def get_schema(self) -> pd.DataFrame:
-        res = pd.DataFrame(map(operator.methodcaller("to_api_repr"), self._t.schema))
+        res = pd.DataFrame(map(operator.methodcaller("to_api_repr"), self.t.schema))
         res["is_primary"] = res["name"].isin(list(self.index))
         res.sort_values(
             by=["is_primary", "name"], ascending=[False, True], inplace=True
@@ -437,6 +439,8 @@ class TableWithIndex:
 
     @property
     def t(self):
+        if self._t is None:
+            self._t = self._bq_client.get_table(self._table_name)
         return self._t
 
     def where(self):

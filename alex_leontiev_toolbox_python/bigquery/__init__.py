@@ -27,6 +27,7 @@ import re
 import sqlparse
 from datetime import datetime, timedelta
 import typing
+import pandas as pd
 
 
 def table_exists(table_name, bq_client=None, entity="table"):
@@ -189,3 +190,20 @@ def find_job_by_destination(
     else:
         (job,) = jobs
         return job
+
+
+def schema_to_df(
+    table_or_table_name: typing.Union[str, bigquery.Table],
+    bq_client: typing.Optional[bigquery.Client] = None,
+    is_return_comparable_object: bool = False,
+    is_table_name_input: bool = False,
+) -> typing.Union[str, pd.DataFrame]:
+    if (bq_client is None) and is_table_name_input:
+        bq_client = bigquery.Client()
+    table = (
+        bq_client.get_table(table_or_table_name)
+        if is_table_name_input
+        else table_or_table_name
+    )
+    df = pd.DataFrame([sf.to_api_repr() for sf in table.schema])
+    return df.to_string() if is_return_comparable_object else df

@@ -41,9 +41,11 @@ def test_to_table():
         table_name = None
         try:
             alex_leontiev_toolbox_python.bigquery.create_dataset(
-                dataset_name, location=location, exist_ok=True)
+                dataset_name, location=location, exist_ok=True
+            )
             to_table = alex_leontiev_toolbox_python.caching.to_tabler.ToTabler(
-                f"{dataset_name}.t_", bq_client=bq_client, assume_sync=True)
+                f"{dataset_name}.t_", bq_client=bq_client, assume_sync=True
+            )
             sql = """
                 SELECT
                   gender
@@ -59,7 +61,8 @@ def test_to_table():
             """
             table_name, debug = to_table(sql, is_return_debug_info=True)
             assert alex_leontiev_toolbox_python.bigquery.table_exists(
-                table_name, bq_client=bq_client)
+                table_name, bq_client=bq_client
+            )
             assert debug["is_executed"]
             table_name, debug = to_table(sql, is_return_debug_info=True)
             assert not debug["is_executed"]
@@ -69,6 +72,7 @@ def test_to_table():
             for kwargs in [{}, dict(sqlalchemy_db="sqlite+pysqlite:///.fetcher.db")]:
                 fetch = alex_leontiev_toolbox_python.caching.fetcher.Fetcher(
                     bq_client=bq_client,
+                    log_creation_kwargs=dict(level="DEBUG"),
                     **kwargs,
                 )
                 df, debug = fetch(table_name, is_return_debug_info=True)
@@ -87,10 +91,12 @@ def test_upload():
     location = "US"
     bq_client = bigquery.Client(location=location)
     to_table = alex_leontiev_toolbox_python.caching.to_tabler.ToTabler(
-        bq_client=bq_client)
+        bq_client=bq_client
+    )
 
-    df = pd.DataFrame(np.random.randn(10, 10),
-                      columns=list(string.ascii_lowercase)[:10])
+    df = pd.DataFrame(
+        np.random.randn(10, 10), columns=list(string.ascii_lowercase)[:10]
+    )
 
     tables = set()
 
@@ -99,7 +105,8 @@ def test_upload():
         tables.add(tn)
         assert _d["is_executed"]
         assert alex_leontiev_toolbox_python.bigquery.table_exists(
-            tn, bq_client=bq_client)
+            tn, bq_client=bq_client
+        )
         assert bq_client.get_table(tn).num_rows == 10
 
         tn, _d = to_table.upload_df(df, is_return_debug_info=True)
@@ -108,15 +115,16 @@ def test_upload():
 
         bq_client.delete_table(tn)
 
-        df = pd.DataFrame(np.random.randn(10, 10),
-                          columns=list(string.ascii_uppercase)[:10])
-        tn, _d = to_table.upload_df(
-            df, is_return_debug_info=True, superkey=["A"])
+        df = pd.DataFrame(
+            np.random.randn(10, 10), columns=list(string.ascii_uppercase)[:10]
+        )
+        tn, _d = to_table.upload_df(df, is_return_debug_info=True, superkey=["A"])
         tables.add(tn)
         assert _d["is_executed"]
         assert _d["superkey"] == ["A"]
         assert alex_leontiev_toolbox_python.bigquery.table_exists(
-            tn, bq_client=bq_client)
+            tn, bq_client=bq_client
+        )
         assert bq_client.get_table(tn).num_rows == 10
     finally:
         for tn in tables:
