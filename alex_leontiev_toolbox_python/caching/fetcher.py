@@ -78,14 +78,14 @@ class Fetcher:
     def _warning(self, *args, **kwargs):
         return self._log(*args, method="warning", **kwargs)
 
-    def _debug(self, *args, **kwargs):
-        return self._log(*args, method="debug", **kwargs)
+    # def _debug(self, *args, **kwargs):
+    #     return self._log(*args, method="debug", **kwargs)
 
-    def _info(self, *args, **kwargs):
-        return self._log(*args, method="info", **kwargs)
+    # def _info(self, *args, **kwargs):
+    #     return self._log(*args, method="info", **kwargs)
 
-    def _error(self, *args, **kwargs):
-        return self._log(*args, method="error", **kwargs)
+    # def _error(self, *args, **kwargs):
+    #     return self._log(*args, method="error", **kwargs)
 
     def _log(self, *args, method="warning", **kwargs):
         if self._is_loud:
@@ -111,7 +111,7 @@ class Fetcher:
             and use_query_cache
         ):
             d["is_executed"] = False
-            self._debug(f'fetching "{table_name}" from cache')
+            self._logger.info(f'fetching "{table_name}" from cache')
         else:
             d["is_executed"] = True
             num_bytes = self._bq_client.get_table(table_name).num_bytes
