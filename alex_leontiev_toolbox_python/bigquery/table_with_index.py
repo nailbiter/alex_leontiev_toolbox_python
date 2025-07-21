@@ -265,7 +265,7 @@ class TableWithIndex:
 
     @property
     def num_bytes(self):
-        res = self._t.num_bytes if self._bytes_size is None else self._bytes_size
+        res = self.t.num_bytes if self._bytes_size is None else self._bytes_size
         # self._logger.warning(f"num_bytes: {res}")
         return res
 
