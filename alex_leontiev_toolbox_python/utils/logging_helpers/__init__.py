@@ -67,7 +67,7 @@ def get_configured_logger(
         getattr(
             logging,
             min(
-                [level] + ([] if log_to_file is None else [file_log_format]),
+                [level] + ([] if log_to_file is None else [file_log_level]),
                 key=_LOG_LEVELS_URGENCY.get,
             ),
         )
