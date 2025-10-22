@@ -399,6 +399,12 @@ class TableWithIndex:
         kwargs = {k: to_list(v) for k, v in kwargs.items()}
         sliced_cols = [k for k, v in kwargs.items() if len(v) == 1]
         self._logger.warning(dict(kwargs=kwargs, sliced_cols=sliced_cols))
+
+        new_index = list(set(self.index) - set(sliced_cols))
+        if len(new_index) == 0:
+            new_index = self.index
+            is_exclude_sliced_cols = False
+
         return TableWithIndex(
             Template(
                 """
@@ -432,7 +438,7 @@ class TableWithIndex:
                 sliced_cols=sliced_cols,
                 is_exclude_sliced_cols=is_exclude_sliced_cols,
             ),
-            index=list(set(self.index) - set(sliced_cols)),
+            index=new_index,
             **{k: getattr(self, f"_{k}") for k in _ANALYSIS_HOOKS},
             is_skip=(not is_force_verify),
         )
