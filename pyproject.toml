@@ -6,7 +6,7 @@ authors = ["Oleksii Leontiev <alozz1991@gmail.com>"]
 license = "MIT License"
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.11"
+python = ">=3.9"
 google-cloud-bigquery = "^3.2.0"
 sqlparse = "^0.4.2"
 SQLAlchemy = "^1.4.39"
