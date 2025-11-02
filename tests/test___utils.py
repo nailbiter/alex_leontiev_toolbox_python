@@ -24,6 +24,7 @@ import time
 import pandas as pd
 import numpy as np
 import functools
+import json
 
 
 def test_format_bytes():
@@ -149,3 +150,19 @@ def test_timeit_context():
     with TimeItContext("chunk", report_dict=report_dict):
         time.sleep(2)
     assert np.abs(report_dict["duration_seconds"] - 2) < 1e-2
+
+    msgs = []
+    with TimeItContext(
+        "chunk",
+        report_dict=report_dict,
+        is_warning_on_start=True,
+        is_warning_on_end=True,
+        print_callback=msgs.append,
+    ):
+        pass
+    assert len(msgs) == 3
+    assert msgs[0].startswith('"chunk" started at '), msgs
+    assert msgs[1].startswith('"chunk" ended at '), msgs
+    assert msgs[2].startswith('"chunk" took '), msgs
+    # with open("/tmp/test_timeit_context_2.txt", "w") as f:
+    #     json.dump(msgs, f)
