@@ -33,6 +33,11 @@ def _(l: list) -> str:
     return " - ".join([f"%({x})s" for x in l])
 
 
+@make_log_format.register
+def _(s: str) -> str:
+    return s
+
+
 _LOG_LEVELS_URGENCY = {
     k: i for i, k in enumerate(["DEBUG", "INFO", "WARNING", "ERROR"])
 }
