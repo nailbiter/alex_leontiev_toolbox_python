@@ -19,19 +19,22 @@ ORGANIZATION:
 ==============================================================================="""
 import typing
 import logging
+import operator
+import functools
+import subprocess
+import json
+from datetime import datetime, date
+
 from google.cloud import bigquery
+import pandas as pd
+from jinja2 import Template
+
 from alex_leontiev_toolbox_python.utils import format_bytes
 from alex_leontiev_toolbox_python.bigquery import query_bytes
 from alex_leontiev_toolbox_python.bigquery.analysis import (
     _IS_SUPERKEY_KEYS_NO_NULL_TPL,
     _IS_SUPERKEY_IS_SUPERKEY_TPL,
 )
-import pandas as pd
-import operator
-import functools
-import subprocess
-import json
-from jinja2 import Template
 
 
 class _BigQuerySeries:
@@ -489,14 +492,33 @@ class TableWithIndex:
             )
 
 
+### START to_sql
 @functools.singledispatch
-def to_sql(x) -> str:
+def to_sql(x, **kwargs) -> str:
     return str(x)
 
 
 @to_sql.register
-def _(x: str) -> str:
-    return f'"""{x}"""'
+def _(x: str, quote='"') -> str:
+    return quote * 3 + str(x) + quote * 3
+
+
+@to_sql.register
+def _(x: datetime) -> str:
+    return f"datetime({x.year}, {x.month}, {x.day})"
+
+
+@to_sql.register
+def _(x: date) -> str:
+    return f"date({x.year}, {x.month}, {x.day})"
+
+
+@to_sql.register
+def _(x: list) -> str:
+    return "(" + ", ".join(map(to_sql, x)) + ")"
+
+
+### END to_sql
 
 
 @functools.singledispatch
@@ -510,15 +532,18 @@ def _(x: list) -> list:
 
 
 @functools.singledispatch
-def to_table_name(x) -> str:
+def to_table_name(x, **kwargs) -> str:
     raise NotImplementedError()
 
 
 @to_table_name.register
-def _(x: str) -> str:
+def _(x: str, **_) -> str:
     return f"`{x}`"
 
 
 @to_table_name.register
-def _(x: TableWithIndex) -> str:
-    return x.sql
+def _(x: TableWithIndex, is_monolitic: bool = False, **_) -> str:
+    if is_monolitic:
+        raise NotImplementedError("FIXME")
+    else:
+        return x.sql
