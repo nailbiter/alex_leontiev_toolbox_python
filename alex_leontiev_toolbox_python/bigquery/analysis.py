@@ -17,20 +17,20 @@ ORGANIZATION:
     REVISION: ---
 
 ==============================================================================="""
+import functools
+import inspect
+import logging
+import types
+import typing
+from typing import cast
+
 import pandas as pd
-from jinja2 import Template
-from google.cloud import bigquery
-from alex_leontiev_toolbox_python.utils import melt_single_record_df
+from alex_leontiev_toolbox_python.bigquery import schema_to_df
 from alex_leontiev_toolbox_python.caching.fetcher import Fetcher
 from alex_leontiev_toolbox_python.caching.to_tabler import ToTabler
-from alex_leontiev_toolbox_python.bigquery import schema_to_df
-import inspect
-import types
-from typing import cast
-import typing
-import logging
-import functools
-
+from alex_leontiev_toolbox_python.utils import melt_single_record_df
+from google.cloud import bigquery
+from jinja2 import Template
 
 _DEFAULT_TABLE_ALIASES = ("tn1", "tn2")
 
@@ -156,6 +156,9 @@ def field_coverage_stats(
     is_return_debug_info=False,
     is_normalize_keys=True,
     aliases=_DEFAULT_TABLE_ALIASES,
+    join: typing.Literal[
+        "join", "left join", "right join", "full outer join"
+    ] = "full outer join",
     weight: typing.Optional[typing.Callable] = None,
 ):
     if fetch is None:
@@ -196,7 +199,7 @@ def field_coverage_stats(
         select {{fields|join(",")}},
             ifnull({{aliases[0]}}, 0) {{aliases[0]}},
             ifnull({{aliases[1]}}, 0) {{aliases[1]}},
-        from t1 full outer join t2 using ({{fields|join(",")}})
+        from t1 {{ join_sql }} t2 using ({{fields|join(",")}})
     )
     select {{aliases|join(",")}},
         {% if weight is none %}
@@ -215,6 +218,7 @@ def field_coverage_stats(
             "aliases": aliases,
             "fields": fields,
             "weight": weight,
+            "join_sql": join,
         }
     )
     d["tn"] = to_table(d["rendered_sql"])
