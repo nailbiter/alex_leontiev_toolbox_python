@@ -505,7 +505,7 @@ def _(x: str, quote='"') -> str:
 
 @to_sql.register
 def _(x: datetime) -> str:
-    return f"datetime({x.year}, {x.month}, {x.day})"
+    return f"datetime({x.year}, {x.month}, {x.day}, {x.hour}, {x.minute}, {x.second})"
 
 
 @to_sql.register
