@@ -29,6 +29,10 @@ import alex_leontiev_toolbox_python.caching
 from alex_leontiev_toolbox_python.caching._sql_to_hash_sqlparse import (
     sql_to_hash_sqlparse,
 )
+from alex_leontiev_toolbox_python.utils.logging_helpers import (
+    get_configured_logger,
+    make_log_format,
+)
 from jinja2 import Template
 import json
 from datetime import datetime, timedelta
@@ -71,7 +75,7 @@ class ToTabler:
         self._wait_after_dataframe_upload_seconds = wait_after_dataframe_upload_seconds
 
         self._assume_sync = assume_sync
-        self._is_loud = is_loud
+        # self._is_loud = is_loud
 
         assert 2 <= len(prefix.split(".")) <= 3, prefix
         if len(prefix.split(".")) == 2:
@@ -97,22 +101,38 @@ class ToTabler:
             ), f'ds "{_dataset}" does not exist'
         self._quota_used_bytes = 0
         self._post_call_callbacks = post_call_callbacks
-        self._logger = logging.getLogger(self.__class__.__name__)
+        self._logger = get_configured_logger(
+            self.__class__.__name__, level="DEBUG" if is_loud else "INFO"
+        )
 
         self._recompute_tables_cache()
 
-    def _warning(self, *args, **kwargs):
-        return self._log(*args, method="warning", **kwargs)
+    def _debug(self, *args, **kwargs):
+        return self._log(*args, method="debug", **kwargs)
 
     def _error(self, *args, **kwargs):
         return self._log(*args, method="error", **kwargs)
 
-    def _log(self, *args, method="warning", **kwargs):
-        if self._is_loud:
-            if method == "warning":
-                return self._logger.warning(*args, **kwargs)
-            elif method == "error":
-                return self._logger.error(*args, **kwargs)
+    def _info(self, *args, **kwargs):
+        return self._log(*args, method="info", **kwargs)
+
+    def _warning(self, *args, **kwargs):
+        return self._log(*args, method="warning", **kwargs)
+
+    def _log(
+        self,
+        *args,
+        method: typing.Literal["debug", "warning", "info", "error"] = "debug",
+        **kwargs,
+    ):
+        if method == "debug":
+            return self._logger.debug(*args, **kwargs)
+        elif method == "error":
+            return self._logger.error(*args, **kwargs)
+        elif method == "info":
+            return self._logger.info(*args, **kwargs)
+        elif method == "warning":
+            return self._logger.warning(*args, **kwargs)
 
     def _recompute_tables_cache(self):
         if self._assume_sync:
@@ -123,7 +143,7 @@ class ToTabler:
                     is_include_prefix=True,
                 )
             )
-            self._warning(f"{len(self._tables_cache)} tables recycled")
+            self._debug(f"{len(self._tables_cache)} tables recycled")
         else:
             self._tables_cache = set()
 
@@ -194,7 +214,7 @@ class ToTabler:
         job = None
         if self._table_exists(table_name) and use_query_cache:
             is_executed = False
-            self._warning(f"table `{table_name}` exists ==> not recreate")
+            self._debug(f"table `{table_name}` exists ==> not recreate")
         else:
             is_executed = True
             self._tables_cache.add(table_name)
@@ -207,7 +227,7 @@ class ToTabler:
                     raise
                 self._quota_used_bytes += used_bytes
             else:
-                self._warning("dry_run")
+                self._debug("dry_run")
 
         r = {
             "sql": sql,
@@ -258,9 +278,7 @@ class ToTabler:
             assert alex_leontiev_toolbox_python.utils.is_pandas_superkey(df, superkey)
             df = df.sort_values(by=superkey)
         else:
-            self._warning(
-                "uploading without superkey ==> hash will depend on row order"
-            )
+            self._debug("uploading without superkey ==> hash will depend on row order")
         m = hashlib.md5()
         for cn in df.columns:
             m.update(cn.encode())
@@ -273,7 +291,7 @@ class ToTabler:
         assert self._is_valid_table_name(table_name)
         if self._table_exists(table_name) and use_query_cache:
             debug_info["is_executed"] = False
-            self._warning(f"table `{table_name}` exists ==> not recreate")
+            self._debug(f"table `{table_name}` exists ==> not recreate")
         else:
             debug_info["is_executed"] = True
             if not dry_run:
@@ -287,8 +305,8 @@ class ToTabler:
                     else load_job_config,
                 )
                 self._tables_cache.add(table_name)
-                self._warning(f'creating table "{table_name}"')
+                self._debug(f'creating table "{table_name}"')
             else:
-                self._warning("dry_run")
+                self._debug("dry_run")
             time.sleep(wait_after_dataframe_upload_seconds)
         return (table_name, debug_info) if is_return_debug_info else table_name
