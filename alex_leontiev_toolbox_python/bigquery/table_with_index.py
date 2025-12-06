@@ -180,11 +180,14 @@ class TableWithIndex:
         to_table: typing.Optional[typing.Callable] = None,
         is_table_name: typing.Optional[bool] = None,
         description: typing.Optional[str] = None,
+        log_creation_kwargs: dict = {},
     ):
         index = tuple(sorted(set(index)))
         assert len(index) > 0, index
 
-        self._logger = logging.getLogger(self.__class__.__name__)
+        self._logger = logging.getLogger(
+            self.__class__.__name__, **{**dict(level="INFO"), **log_creation_kwargs}
+        )
 
         is_table_name = ((is_table_name is not None) and is_table_name) or (
             _table_name_or_query(table_name) == "table_name"
@@ -401,7 +404,7 @@ class TableWithIndex:
         assert len(kwargs) > 0
         kwargs = {k: to_list(v) for k, v in kwargs.items()}
         sliced_cols = [k for k, v in kwargs.items() if len(v) == 1]
-        self._logger.warning(dict(kwargs=kwargs, sliced_cols=sliced_cols))
+        self._logger.debug(dict(kwargs=kwargs, sliced_cols=sliced_cols))
 
         new_index = list(set(self.index) - set(sliced_cols))
         if len(new_index) == 0:

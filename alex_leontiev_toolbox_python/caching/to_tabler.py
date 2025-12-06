@@ -64,9 +64,10 @@ class ToTabler:
         assume_sync=False,
         post_call_callbacks=[],
         is_create_dataset_if_not_exists=True,
-        wait_after_dataframe_upload_seconds=2,
+        wait_after_dataframe_upload_seconds: float = 2,
         sql_hash_algo: typing.Union[str, typing.Callable] = "simple",
         is_loud: bool = True,
+        log_creation_kwargs: dict = {},
     ):
         if bq_client is None:
             bq_client = bigquery.Client()
@@ -102,7 +103,8 @@ class ToTabler:
         self._quota_used_bytes = 0
         self._post_call_callbacks = post_call_callbacks
         self._logger = get_configured_logger(
-            self.__class__.__name__, level="DEBUG" if is_loud else "INFO"
+            self.__class__.__name__,
+            **{**dict(level="DEBUG" if is_loud else "INFO"), **log_creation_kwargs},
         )
 
         self._recompute_tables_cache()
