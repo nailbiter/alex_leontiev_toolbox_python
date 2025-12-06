@@ -18,14 +18,16 @@ ORGANIZATION:
 
 ==============================================================================="""
 
-from sqlalchemy import create_engine, text
-from google.cloud import bigquery
-import sqlalchemy
-import pandas as pd
+import functools
 import logging
 import typing
-from alex_leontiev_toolbox_python.utils.logging_helpers import get_configured_logger
+
+import pandas as pd
+import sqlalchemy
 from alex_leontiev_toolbox_python.bigquery import schema_to_df
+from alex_leontiev_toolbox_python.utils.logging_helpers import get_configured_logger
+from google.cloud import bigquery
+from sqlalchemy import create_engine, text
 
 _TABLE_NAME_TO_DB_NAME_CONNECTOR = "___"
 _DASH_REPLACE = "__"
@@ -45,7 +47,9 @@ class Fetcher:
         is_loud: bool = True,
         schema_converters: dict = {},
         log_creation_kwargs: dict = {},
+        custom_post_processors: dict = {},
     ):
+        self._post_processors = {**_POST_PROCESSORS, **custom_post_processors}
         if bq_client is None:
             bq_client = bigquery.Client()
         self._bq_client = bq_client
@@ -130,7 +134,7 @@ class Fetcher:
                         )
                         df[cn] = f(df[cn])
             if post_process is not None:
-                df = _POST_PROCESSORS[post_process](df)
+                df = self._post_processors[post_process](df)
 
             with self._sqlalchemy_engine.begin() as conn:
                 df.to_sql(db_table, conn, if_exists="replace", index=False)
