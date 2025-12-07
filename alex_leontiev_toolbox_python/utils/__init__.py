@@ -17,20 +17,21 @@ ORGANIZATION:
     REVISION: ---
 
 ==============================================================================="""
-import hashlib
-import numpy as np
-import pandas as pd
-import string
 import collections
 import functools
+import hashlib
 import logging
-import time
-from datetime import datetime, timedelta
 import os
-from os import path
 import sqlite3
-import uuid
+import string
+import time
 import typing
+import uuid
+from datetime import datetime, timedelta
+from os import path
+
+import numpy as np
+import pandas as pd
 
 
 def string_to_hash(s, algo="md5"):
@@ -323,3 +324,33 @@ def melt_single_record_df(
     for k in fields_to_preserve:
         df[k] = r[k]
     return df
+
+
+@functools.singledispatch
+def typify(x):
+    raise NotImplementedError(dict(x=x, t=type(x)))
+
+
+@typify.register
+def _(x: int):
+    return "int"
+
+
+@typify.register
+def _(x: float):
+    return "float"
+
+
+@typify.register
+def _(x: list):
+    return "list"
+
+
+@typify.register
+def _(x: bool):
+    return "bool"
+
+
+# @typify.register
+# def _(x: np.array):
+#     return "np.array"
