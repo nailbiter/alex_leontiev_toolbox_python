@@ -327,27 +327,30 @@ def melt_single_record_df(
 
 
 @functools.singledispatch
-def typify(x):
-    raise NotImplementedError(dict(x=x, t=type(x)))
+def typify(x, is_break: bool = True) -> str:
+    if is_break:
+        raise NotImplementedError(dict(x=x, t=type(x)))
+    else:
+        return ""
 
 
 @typify.register
-def _(x: int):
+def _(x: int, **_) -> str:
     return "int"
 
 
 @typify.register
-def _(x: float):
+def _(x: float, **_) -> str:
     return "float"
 
 
 @typify.register
-def _(x: list):
+def _(x: list, **_) -> str:
     return "list"
 
 
 @typify.register
-def _(x: bool):
+def _(x: bool, **_) -> str:
     return "bool"
 
 
