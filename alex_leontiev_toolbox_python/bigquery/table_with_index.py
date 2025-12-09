@@ -30,6 +30,10 @@ import pandas as pd
 from jinja2 import Template
 
 from alex_leontiev_toolbox_python.utils import format_bytes
+from alex_leontiev_toolbox_python.utils.logging_helpers import (
+    get_configured_logger,
+    make_log_format,
+)
 from alex_leontiev_toolbox_python.bigquery import query_bytes
 from alex_leontiev_toolbox_python.bigquery.analysis import (
     _IS_SUPERKEY_KEYS_NO_NULL_TPL,
@@ -185,7 +189,7 @@ class TableWithIndex:
         index = tuple(sorted(set(index)))
         assert len(index) > 0, index
 
-        self._logger = logging.getLogger(
+        self._logger = get_configured_logger(
             self.__class__.__name__, **{**dict(level="INFO"), **log_creation_kwargs}
         )
 
