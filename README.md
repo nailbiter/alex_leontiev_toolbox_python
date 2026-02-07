@@ -5,7 +5,18 @@ Alex Leontiev's misc Python toolbox
 
 ## install
 
-`git+https://github.com/nailbiter/alex_leontiev_toolbox_python@main-poetry`
+### basic
+
+```
+git+https://github.com/nailbiter/alex_leontiev_toolbox_python@main-poetry
+```
+
+### extra
+
+```
+pip install 'alex_leontiev_toolbox_python[bigquery, analytics] @ git+https://github.com/nailbiter/alex_leontiev_toolbox_python@feature/20260207-segmented-requirements.txt'
+```
+
 
 ## test
 
